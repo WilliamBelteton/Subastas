@@ -20,7 +20,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Conexión a Base de Datos (mysql2/promise)
-const mysql = require('mysql2'); // O 'mysql' según la librería que uses
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
