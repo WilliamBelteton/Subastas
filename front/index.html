@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CopartExpress Subastas</title>
+    <!-- Asegúrate de tener tu archivo CSS aquí -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body style="margin: 0; font-family: Arial, sans-serif; background-color: #f4f6f9;">
+
+    <!-- ========================================== -->
+    <!-- BARRA DE NAVEGACIÓN (Controlada por app.js)-->
+    <!-- ========================================== -->
+    <header style="background: white; border-bottom: 2px solid #0056b3; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
+            <div style="font-size: 1.5rem; font-weight: bold; color: #0056b3;">
+                CopartExpress
+            </div>
+            <!-- Contenedor donde app.js inyectará los botones y la sesión -->
+            <nav id="nav-auth" style="display: flex; align-items: center; gap: 15px;">
+                <!-- Se llena automáticamente -->
+            </nav>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- CONTENEDOR PRINCIPAL (El lienzo de la app) -->
+    <!-- ========================================== -->
+    <main id="main-container" style="max-width: 1200px; margin: 20px auto; padding: 0 20px;">
+        <!-- Si ves este texto en pantalla, significa que JS no está cargando -->
+        <h2 style="text-align: center; color: #666;">Cargando plataforma...</h2>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- SCRIPTS EN EL ORDEN EXACTO Y OBLIGATORIO   -->
+    <!-- ========================================== -->
+    <!-- 1. Librería de WebSockets -->
+    <script src="http://localhost:4000/socket.io/socket.io.js"></script>
+    
+    <script src="js/auth.js"></script>
+<script src="js/inventario.js"></script>
+<script src="js/publicar.js"></script>
+
+<script src="js/subastaview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
