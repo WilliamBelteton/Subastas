@@ -131,7 +131,8 @@ app.get('/api/vehiculos', async (req, res) => {
             FROM vehiculos v 
             ORDER BY v.id DESC
         `;
-        const [vehiculos] = await db.execute(query);
+        // Asegúrate de usar await y extraer la primera posición si usas mysql2/promise:
+        const [vehiculos] = await db.query('SELECT * FROM vehiculos');
         
         return res.status(200).json(vehiculos);
         
