@@ -30,9 +30,16 @@ require('dotenv').config();
 
 
 // Forma correcta para TiDB Cloud usando una URL de conexión
-const db = mysql.createConnection(
-    `mysql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?ssl={"rejectUnauthorized":true}`
-);
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: { 
+        rejectUnauthorized: true // O false según prefieras para el certificado de TiDB
+    }
+});
 
 db.connect((err) => {
     if (err) {
