@@ -24,28 +24,30 @@ app.use(express.urlencoded({ extended: true }));
 // Si estás probando en tu computadora, necesitas esta línea para leer el .env
 require('dotenv').config(); 
 
+require('dotenv').config();
+const mysql = require('mysql2');
+
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    // El bloque SSL sí va directo en el código
-    ssl: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: true
+    ssl: { 
+        rejectUnauthorized: false 
     }
 });
 
-// Tu prueba de conexión
-db.query("SELECT 1", (err, results) => {
+db.connect((err) => {
     if (err) {
-        console.error("Error conectando a la base de datos:", err);
+        console.error("Error al conectar a TiDB:", err);
     } else {
         console.log("¡Conectado exitosamente a TiDB Cloud!");
     }
 });
+
 module.exports = db;
+
 // Importar Rutas (Ejemplo resumido de Endpoints clave)
 // Ruta para Registrar Usuario
 app.post('/api/auth/registro', async (req, res) => {
