@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 const app = express();
@@ -19,14 +20,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Conexión a Base de Datos (mysql2/promise)
-const mysql = require('mysql2/promise');
-const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Umg12345',
-    database: process.env.DB_NAME || 'db_subastas_vehiculos'
+const mysql = require('mysql2'); // O 'mysql' según la librería que uses
+
+const db = mysql.createConnection({
+    host: 'gateway01.us-east-1.prod.aws.tidbcloud.com',
+    port: 4000,
+    user: '3T//PD0LoJTeV7Rroot',
+    password: '3C80c25fPTFL5c93',
+    database: 'db_subastas_vehiculos',
+    ssl: {
+        rejectUnauthorized: false // Obligatorio para conexiones seguras TLS en la nube
+    }
 });
 
+db.connect((err) => {
+    if (err) {
+        console.error('Error al conectar a la base de datos en la nube:', err);
+        return;
+    }
+    console.log('¡Conectado exitosamente a la base de datos de TiDB Cloud!');
+});
+
+module.exports = db;
 // Importar Rutas (Ejemplo resumido de Endpoints clave)
 // Ruta para Registrar Usuario
 app.post('/api/auth/registro', async (req, res) => {
@@ -95,12 +110,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// =========================================================
-// RUTA PARA OBTENER EL INVENTARIO (Y MIS PUBLICACIONES)
-// =========================================================
-// =========================================================
-// RUTA PARA OBTENER EL INVENTARIO CON LA PUJA MÁS ALTA
-// =========================================================
 // =========================================================
 // RUTA PARA OBTENER EL INVENTARIO CON LA PUJA MÁS ALTA
 // =========================================================
