@@ -23,24 +23,21 @@ app.use(express.urlencoded({ extended: true }));
 const mysql = require('mysql2'); // O 'mysql' según la librería que uses
 
 const db = mysql.createConnection({
-    host: 'gateway01.us-east-1.prod.aws.tidbcloud.com',
-    port: 4000,
-    user: '3T//PD0LoJTeV7Rroot',
-    password: '3C80c25fPTFL5c93',
-    database: 'db_subastas_vehiculos',
-    ssl: {
-        rejectUnauthorized: false // Obligatorio para conexiones seguras TLS en la nube
-    }
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: { rejectUnauthorized: false }
 });
 
 db.connect((err) => {
     if (err) {
-        console.error('Error al conectar a la base de datos en la nube:', err);
+        console.error('Error al conectar a la base de datos:', err);
         return;
     }
-    console.log('¡Conectado exitosamente a la base de datos de TiDB Cloud!');
+    console.log('¡Conectado exitosamente usando variables de entorno!');
 });
-
 module.exports = db;
 // Importar Rutas (Ejemplo resumido de Endpoints clave)
 // Ruta para Registrar Usuario
