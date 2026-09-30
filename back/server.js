@@ -27,16 +27,12 @@ require('dotenv').config();
 require('dotenv').config();
 
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    ssl: { 
-        rejectUnauthorized: false 
-    }
-});
+
+
+// Forma correcta para TiDB Cloud usando una URL de conexión
+const db = mysql.createConnection(
+    `mysql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}?ssl={"rejectUnauthorized":true}`
+);
 
 db.connect((err) => {
     if (err) {
@@ -47,7 +43,6 @@ db.connect((err) => {
 });
 
 module.exports = db;
-
 // Importar Rutas (Ejemplo resumido de Endpoints clave)
 // Ruta para Registrar Usuario
 app.post('/api/auth/registro', async (req, res) => {
