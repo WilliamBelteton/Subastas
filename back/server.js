@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
 require('dotenv').config();
 
 const app = express();
@@ -23,7 +23,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Si estás probando en tu computadora, necesitas esta línea para leer el .env
 require('dotenv').config(); 
-const mysql = require('mysql2');
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
