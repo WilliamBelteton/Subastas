@@ -1,5 +1,5 @@
 // URL base del Backend Node.js
-const API_URL = 'http://localhost:4000/api';
+const API_URL = 'https://subastas-qja9.onrender.com';
 
 // =========================================================
 // GESTIÓN DE SESIÓN DE USUARIO GLOBAL
