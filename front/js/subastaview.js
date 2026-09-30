@@ -16,7 +16,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         const fotosString = vehiculo.fotos || "";
         let fotos = fotosString ? fotosString.split(',') : [];
         if (fotos.length === 0) fotos.push('https://via.placeholder.com/600x400?text=Sin+Imagen');
-        fotos = fotos.map(f => f.startsWith('/uploads/') ? `http://localhost:4000${f}` : f);
+        fotos = fotos.map(f => f.startsWith('/uploads/') ? `https://subastas-qja9.onrender.com${f}` : f);
 
         // =========================================================
         // AQUÍ ESTÁ LA MAGIA: LEER LA PUJA MÁXIMA DE LA BD
@@ -103,7 +103,7 @@ var socket;
 
 // 2. Verificamos que la librería se haya cargado desde el HTML
 if (typeof io !== 'undefined') {
-    socket = io('http://localhost:4000');
+    const socket = io('https://subastas-qja9.onrender.com');
     window.socket = socket; // Respaldo global
 
     // Escuchar cuando la puja sube en tiempo real
