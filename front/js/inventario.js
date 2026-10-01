@@ -55,13 +55,17 @@ async function renderizarInventario(container) {
             }
 
             grid.innerHTML = lista.map(v => {
-                const fotosString = v.fotos || "";
-                const fotosArray = fotosString ? fotosString.split(',') : [];
-                let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
-                
-                if (fotoPortada.startsWith('/uploads/')) {
-                    fotoPortada = `http://localhost:4000${fotoPortada}`;
-                }
+                // Asegúrate de definir la URL de tu backend
+const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+
+// Al armar el HTML de tu tarjeta, haz esto con la variable de las fotos:
+const fotoRuta = vehiculo.fotos ? vehiculo.fotos.split(',')[0] : '';
+const imagenCompleta = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+
+// Y en tu template HTML:
+`
+<img src="${imagenCompleta}" alt="Vehículo" style="width: 100px; height: 80px; object-fit: cover;">
+`
 
                 const precioActual = v.puja_maxima ? v.puja_maxima : v.precio_base;
                 const precioFormateado = Number(precioActual).toLocaleString();
