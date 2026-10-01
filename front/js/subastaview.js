@@ -14,7 +14,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
 // // 1. Proteger y formatear las fotos de manera blindada
     const fotosString = vehiculo.fotos || "";
-    let fotos = [];
+let fotos = fotosString ? fotosString.split(',').map(f => obtenerUrlFoto(f)) : ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
 
     if (fotosString.trim() !== "") {
         // Limpiamos comillas o espacios extras que pueda traer la base de datos

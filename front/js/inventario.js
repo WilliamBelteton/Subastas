@@ -158,7 +158,7 @@ function mostrarVehiculosEnGrid(vehiculos) {
 
     grid.innerHTML = vehiculos.map(v => {
         const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
-        const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+        const fotoPortada = obtenerUrlFoto(v.fotos);
         const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
 
         return `
