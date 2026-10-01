@@ -82,9 +82,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         `;
 
         if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
-        
-        // Llamada correcta pasando la fecha y el ID del elemento HTML
-        iniciarCuentaRegresiva(vehiculo.fecha_cierre, 'temporizador-reloj');
+        iniciarTemporizador(vehiculo.fecha_cierre);
 
     } catch (err) {
         console.error("Error al cargar la subasta:", err);
