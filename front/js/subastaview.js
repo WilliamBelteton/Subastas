@@ -168,12 +168,15 @@ function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj
     const elemento = document.getElementById(elementoId);
     if (!elemento) return;
 
-    // Limpiamos la fecha para separar fecha y hora de forma segura (ej: "2026-09-30T19:50")
-    let fechaLimpia = fechaCierreStr;
-    if (fechaLimpia.includes(' ')) {
-        fechaLimpia = fechaLimpia.replace(' ', 'T');
+    if (!fechaCierreStr) {
+        elemento.innerHTML = "Fecha no disponible";
+        return;
     }
 
+    // Limpiamos y formateamos la fecha de la base de datos de forma segura
+    let fechaLimpia = fechaCierreStr.replace(' ', 'T');
+    
+    // Si la fecha no incluye una zona horaria, le agregamos 'Z' o aseguramos su lectura local
     const fechaCierre = new Date(fechaLimpia).getTime();
 
     const intervalo = setInterval(() => {
