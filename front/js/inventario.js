@@ -159,17 +159,17 @@ function mostrarVehiculosEnGrid(vehiculos) {
     // 3. Dibujar las tarjetas protegiendo campos nulos
     grid.innerHTML = vehiculos.map(v => {
         // Proteger el campo fotos en caso de que sea null
-        const fotosString = v.fotos || ""; 
-        const fotosArray = fotosString ? fotosString.split(',') : [];
-        
-        // Obtener la portada, si no tiene, poner una de relleno
-        let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
-        
-        // Si la foto es una ruta local del servidor, agregarle la URL del backend
-        if (fotoPortada.startsWith('/uploads/')) {
-            fotoPortada = `https://subastas-qja9.onrender.com${fotoPortada}`;
-        }
+       // Asegúrate de definir la URL de tu backend
+const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
+// Al armar el HTML de tu tarjeta, haz esto con la variable de las fotos:
+const fotoRuta = vehiculo.fotos ? vehiculo.fotos.split(',')[0] : '';
+const imagenCompleta = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+
+// Y en tu template HTML:
+`
+<img src="${imagenCompleta}" alt="Vehículo" style="width: 100px; height: 80px; object-fit: cover;">
+`
         // Proteger el precio
         const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
 
