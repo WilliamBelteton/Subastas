@@ -162,28 +162,32 @@ function realizarPuja(vehiculoId, precioBase) {
     });
 }
 
-function iniciarCuentaRegresiva(fechaCierreStr, elementoId) {
-    const elemento = document.getElementById(elementoId);
-    if (!elemento) return;
+function iniciarTemporizador(fechaCierreStr) {
+    // Si ya existe un intervalo corriendo, lo limpiamos
+    if (window.intervaloRelojGlobal) clearInterval(window.intervaloRelojGlobal);
+    // ...
 
-    // Convertimos la fecha de la base de datos de manera segura
     const fechaCierre = new Date(fechaCierreStr).getTime();
 
-    const intervalo = setInterval(() => {
+    intervaloReloj = setInterval(() => {
         const ahora = new Date().getTime();
-        const distancia = fechaCierre - ahora;
+        const diferencia = fechaCierre - ahora;
+        const relojEl = document.getElementById('temporizador-reloj');
 
-        if (distancia < 0) {
-            clearInterval(intervalo);
-            elemento.innerHTML = "¡Subasta Finalizada!";
-            elemento.style.color = "red";
+        if (!relojEl) return;
+
+        if (diferencia <= 0) {
+            clearInterval(intervaloReloj);
+            relojEl.innerText = "¡OFERTA CERRADA / SUBASTA FINALIZADA!";
+            const inputAcciones = document.getElementById('contenedor-oferta-acciones');
+            if (inputAcciones) inputAcciones.innerHTML = "<p style='color:red; font-weight:bold;'>El tiempo ha expirado. Ya no es posible ofertar.</p>";
             return;
         }
 
-        const horas = Math.floor((distancia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutos = Math.floor((distancia % (1000 * 60 * 60)) / (1000 * 60));
-        const segundos = Math.floor((distancia % (1000 * 60)) / 1000);
+        const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-        elemento.innerHTML = `${horas}h ${minutos}m ${segundos}s`;
+        relojEl.innerText = `${horas}h ${minutos}m ${segundos}s`;
     }, 1000);
 }
