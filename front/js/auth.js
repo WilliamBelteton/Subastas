@@ -118,10 +118,15 @@ async function procesarRegistro(e) {
     const bodyData = {
         nombre: document.getElementById('reg-nombre').value.trim(),
         apellido: document.getElementById('reg-apellido').value.trim(),
-        correo: document.getElementById('reg-email').value.trim(), // ID corregido
+        correo: document.getElementById('reg-email').value.trim(),
         telefono: document.getElementById('reg-telefono').value.trim(),
         password: passValor
     };
+
+    // OPCIONAL: Mostrar un indicador visual de que el servidor está despertando
+    if (typeof mostrarAlerta === 'function') {
+        mostrarAlerta("Conectando con el servidor (esto puede tomar unos segundos si estuvo inactivo)...", "exito");
+    }
 
     try {
         const res = await fetch(`${API_URL}/auth/registro`, {
@@ -131,9 +136,7 @@ async function procesarRegistro(e) {
         });
 
         let data;
-        try { data = await res.json(); } catch(err) { data = "Error del servidor."; }
-        
-        const mensajeFinal = typeof extraerMensajeLimpiado === 'function' ? extraerMensajeLimpiado(data) : (data.error || "Error en el registro");
+        try { data = await res.json(); } catch(err) { data = { error: "Respuesta inesperada del servidor." }; }
 
         if (res.ok) {
             if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Cuenta creada con éxito! Ya puedes iniciar sesión.", 'exito');
@@ -141,12 +144,16 @@ async function procesarRegistro(e) {
             
             setTimeout(() => cambiarVista('login'), 1500);
         } else {
+            const mensajeFinal = data.error || "Error en el registro";
             if (typeof mostrarAlerta === 'function') mostrarAlerta(mensajeFinal, 'error');
             else alert(mensajeFinal);
         }
     } catch (err) {
         console.error("Error de conexión:", err);
-        if (typeof mostrarAlerta === 'function') mostrarAlerta("No se pudo conectar con el servidor.", "error");
-        else alert("No se pudo conectar con el servidor.");
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("El servidor en Render está despertando. Vuelve a intentar en unos segundos.", "error");
+        } else {
+            alert("El servidor en Render está despertando. Vuelve a intentar en unos segundos.");
+        }
     }
 }
