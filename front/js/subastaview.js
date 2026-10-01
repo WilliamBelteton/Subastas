@@ -135,7 +135,7 @@ if (typeof io !== 'undefined') {
     });
 }
 
-function realizarPuja(vehiculoId, precioBase) {
+function realizarPuja(vehiculoId, precioBaseLote) {
     const user = obtenerUsuarioActual();
     if (!user) {
         alert("Debe iniciar sesión para ofertar.");
@@ -143,25 +143,28 @@ function realizarPuja(vehiculoId, precioBase) {
         return;
     }
 
-    const montoOfrecido = parseFloat(document.getElementById('input-nueva-oferta').value);
-    const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
-    const montoActual = parseFloat(montoActualTexto);
+    const inputOferta = document.getElementById('input-nueva-oferta');
+    const montoOfrecido = parseFloat(inputOferta.value);
+    
+    // Leemos el texto actual de la pantalla y limpiamos cualquier carácter que no sea número
+    const textoActual = document.getElementById('monto-actual').innerText;
+    const montoActual = parseFloat(textoActual.replace('Q.', '').replace(/,/g, '').trim()) || precioBaseLote;
 
+    // Validación estricta: Debe ser mayor al monto actual
     if (isNaN(montoOfrecido) || montoOfrecido <= montoActual) {
-        mostrarAlerta(`La oferta debe ser mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
+        mostrarAlerta(`La oferta debe ser estrictamente mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
         return;
     }
 
-    // Alerta de éxito al ofertar
-    mostrarAlerta("¡Su oferta ha sido registrada y enviada con éxito!", 'exito');
-
-    
-    // Emitir por Socket.io (Tiempo real instantáneo)
+    // Emitir por Socket.io
     socket.emit('nueva_puja', {
         vehiculoId: vehiculoId,
         usuarioId: user.id,
         monto: montoOfrecido
     });
+
+    // Limpiamos el input después de enviar
+    inputOferta.value = '';
 }
 
 function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj') {
