@@ -1,32 +1,41 @@
-// Función global de apoyo para limpiar y formatear las rutas de las fotos
+// =========================================================================
+// 1. FUNCIÓN GLOBAL DE FOTOS (La versión definitiva, siempre hasta arriba)
+// =========================================================================
 function obtenerUrlFoto(fotosStr) {
     const URL_BACKEND = 'https://subastas-qja9.onrender.com';
     
-    if (!fotosStr || typeof fotosStr !== 'string' || fotosStr.trim() === "") {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    if (!fotosStr) return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+
+    let primeraFoto = "";
+
+    if (typeof fotosStr === 'string' && fotosStr.trim().startsWith('[')) {
+        try {
+            const parsed = JSON.parse(fotosStr);
+            if (Array.isArray(parsed) && parsed.length > 0) primeraFoto = parsed[0];
+        } catch (e) {
+            primeraFoto = fotosStr;
+        }
+    } else if (typeof fotosStr === 'string') {
+        primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
+    } else {
+        primeraFoto = String(fotosStr);
     }
 
-    let primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
-
-    if (!primeraFoto) {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    }
-
-    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
-        return primeraFoto;
-    }
+    if (!primeraFoto || primeraFoto.trim() === "") return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) return primeraFoto;
 
     const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
     return `${URL_BACKEND}${rutaLimpia}`;
 }
 
-// 1. ESTA FUNCIÓN AHORA SOLO DIBUJA EL HTML (Sin lógica adentro)
+// =========================================================================
+// 2. RENDERIZADO DE LA VISTA DE SUBASTA
+// =========================================================================
 async function renderizarVistaSubasta(container, vehiculoId) {
     if (!container) return;
     container.innerHTML = `<p style="padding: 20px; font-size: 1.1rem; color: #555;">Cargando sala de subasta en tiempo real...</p>`;
 
     try {
-        // 1. Obtener los vehículos del backend
         const res = await fetch(`${API_URL}/vehiculos?nocache=${new Date().getTime()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error("No se pudo conectar con el servidor");
         
@@ -38,25 +47,32 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             return;
         }
 
-       // 2. Procesamiento seguro de las fotos para la vista de subasta
-        const fotosString = vehiculo.fotos || "";
+        // Procesamiento ultra seguro de fotos para la galería
+        const fotosString = vehiculo.fotos;
         let fotos = [];
 
-        if (fotosString.trim() !== "") {
-            // Dividimos el texto por comas y aplicamos la función global a cada elemento
-            fotos = fotosString.split(',').map(f => obtenerUrlFoto(f.trim()));
+        if (fotosString) {
+            let parsedFotos = fotosString;
+            if (typeof parsedFotos === 'string' && parsedFotos.trim().startsWith('[')) {
+                try { parsedFotos = JSON.parse(parsedFotos); } 
+                catch (e) { parsedFotos = parsedFotos.split(','); }
+            } else if (typeof parsedFotos === 'string') {
+                parsedFotos = parsedFotos.split(',');
+            }
+
+            if (Array.isArray(parsedFotos)) {
+                fotos = parsedFotos.map(f => obtenerUrlFoto(f));
+            } else {
+                fotos = [obtenerUrlFoto(fotosString)];
+            }
         }
 
-        if (fotos.length === 0) {
-            fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
-        }
+        if (!fotos || fotos.length === 0) fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
 
-        // 3. Manejo de montos (Precio base o Puja actual / columna 'monto')
         const montoActual = vehiculo.monto ? vehiculo.monto : vehiculo.precio_base;
         const precioFormateado = Number(montoActual).toLocaleString();
         const precioBaseLote = Number(vehiculo.precio_base).toLocaleString();
 
-        // 4. Verificar quién va ganando
         const user = obtenerUsuarioActual();
         let badgeStyle = 'background: #e2e3e5; color: #383d41;';
         let badgeText = 'Esperando ofertas... ¡Sé el primero!';
@@ -71,14 +87,12 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             }
         }
 
-        // 5. Inyectar HTML seguro a la pantalla
         container.innerHTML = `
             <div style="background: white; padding: 25px; border-radius: 8px; border: 1px solid #ccc; display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                <!-- Columna Izquierda: Galería -->
                 <div>
-                    <img id="imagen-principal-carrusel" src="${fotos[0]}" style="width: 100%; height: 320px; object-fit: cover; border-radius: 6px;">
+                    <img id="imagen-principal-carrusel" src="${fotos[0]}" onerror="this.src='https://via.placeholder.com/600x400?text=Sin+Imagen'" style="width: 100%; height: 320px; object-fit: cover; border-radius: 6px;">
                     <div style="display: flex; gap: 10px; margin-top: 10px; overflow-x: auto;">
-                        ${fotos.map(f => `<img src="${f}" onclick="cambiarFotoPrincipal('${f}')" style="width: 70px; height: 50px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid #ccc;">`).join('')}
+                        ${fotos.map(f => `<img src="${f}" onerror="this.style.display='none'" onclick="cambiarFotoPrincipal('${f}')" style="width: 70px; height: 50px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid #ccc;">`).join('')}
                     </div>
                     <div style="margin-top: 20px;">
                         <h3>Ficha Técnica</h3>
@@ -89,14 +103,9 @@ async function renderizarVistaSubasta(container, vehiculoId) {
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Motor de Subasta -->
                 <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #ccc;">
                     <h2>Sala de Pujas en Tiempo Real</h2>
-                    
-                    <div id="badge-estado-puja" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; ${badgeStyle}">
-                        ${badgeText}
-                    </div>
-                    
+                    <div id="badge-estado-puja" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; ${badgeStyle}">${badgeText}</div>
                     <p style="font-size: 0.9rem; color: #666;">Precio Base Original: Q. ${precioBaseLote}</p>
                     <h1 style="color: #0056b3; margin: 10px 0;">Puja Actual: <span id="monto-actual">Q. ${precioFormateado}</span></h1>
                     
@@ -112,13 +121,11 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             </div>
         `;
 
-        // 6. Conectar socket y activar temporizador
-        if (window.socket) {
-            window.socket.emit('unirse_vehiculo', vehiculo.id);
-        }
+        if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
         
-        if (typeof iniciarCuentaRegresiva === 'function') {
-            iniciarCuentaRegresiva(vehiculo.fecha_cierre, 'temporizador-reloj');
+        // El llamado al temporizador ahora coincide con el nombre de tu función abajo
+        if (typeof iniciarTemporizador === 'function' && vehiculo.fecha_cierre) {
+            iniciarTemporizador(vehiculo.fecha_cierre.replace(' ', 'T'));
         }
 
     } catch (err) {
@@ -127,13 +134,13 @@ async function renderizarVistaSubasta(container, vehiculoId) {
     }
 }
 
-// 2. LA LÓGICA VA AQUÍ AFUERA (Delegación de eventos global)
-// Esto escucha en toda la página y reacciona SOLAMENTE si el formulario enviado es el de registro.
+// =========================================================================
+// 3. RESTO DE TUS FUNCIONES GLOBALES
+// =========================================================================
+
 document.addEventListener('submit', async (e) => {
-    // Verificamos que el envío provenga exactamente de nuestro formulario de registro
     if (e.target && e.target.id === 'form-registro') {
-        e.preventDefault(); // Evitamos que la página se recargue
-        console.log("✅ 1. Botón presionado. Leyendo datos...");
+        e.preventDefault(); 
         
         const nombreValor = document.getElementById('reg-nombre').value.trim();
         const apellidoValor = document.getElementById('reg-apellido').value.trim();
@@ -146,18 +153,9 @@ document.addEventListener('submit', async (e) => {
             return;
         }
 
-        const data = {
-            nombre: nombreValor,
-            apellido: apellidoValor,
-            correo: emailValor,
-            telefono: telefonoValor,
-            password: passValor
-        };
+        const data = { nombre: nombreValor, apellido: apellidoValor, correo: emailValor, telefono: telefonoValor, password: passValor };
         
-        console.log("✅ 2. Datos recopilados:", data);
-
         try {
-            console.log("✅ 3. Enviando datos a Render...");
             const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -165,7 +163,6 @@ document.addEventListener('submit', async (e) => {
             });
             
             const resultado = await res.json();
-            console.log("✅ 4. Respuesta de Render:", resultado); 
             
             if (res.ok) {
                 alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
@@ -174,7 +171,6 @@ document.addEventListener('submit', async (e) => {
                 alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
             }
         } catch (err) {
-            console.error("❌ 5. Fallo al conectar con el servidor:", err);
             alert("No se pudo conectar con el servidor. Revisa tu internet.");
         }
     }
@@ -184,19 +180,12 @@ function cambiarFotoPrincipal(url) {
     document.getElementById('imagen-principal-carrusel').src = url;
 }
 
-// Escucha en tiempo real de actualizaciones de pujas globales
-// =========================================================
-// CONEXIÓN A SOCKET.IO (Segura y Libre de Errores)
-// =========================================================
-// 1. Declaramos 'socket' para que exista en todo el archivo y no dé error
+// CONEXIÓN A SOCKET.IO
 var socket; 
-
-// 2. Verificamos que la librería se haya cargado desde el HTML
 if (typeof io !== 'undefined') {
     const socket = io('https://subastas-qja9.onrender.com');
-    window.socket = socket; // Respaldo global
+    window.socket = socket; 
 
-    // Escuchar cuando la puja sube en tiempo real
     socket.on('actualizacion_puja', (data) => {
         const elMonto = document.getElementById('monto-actual');
         const badge = document.getElementById('badge-estado-puja');
@@ -217,7 +206,6 @@ if (typeof io !== 'undefined') {
         }
     });
 
-    // Escuchar errores de pujas devueltos por el servidor
     socket.on('error_puja', (mensaje) => {
         mostrarAlerta(mensaje, 'error');
     });
@@ -231,35 +219,38 @@ function realizarPuja(vehiculoId, precioBase) {
         return;
     }
 
-    const montoOfrecido = parseFloat(document.getElementById('input-nueva-oferta').value);
+    const inputOferta = document.getElementById('input-nueva-oferta');
+    if (!inputOferta) return;
+
+    const montoOfrecido = parseFloat(inputOferta.value);
     const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
     const montoActual = parseFloat(montoActualTexto);
 
     if (isNaN(montoOfrecido) || montoOfrecido <= montoActual) {
-        mostrarAlerta(`La oferta debe ser mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
+        if (typeof mostrarAlerta === 'function') mostrarAlerta(`La oferta debe ser mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
+        else alert(`La oferta debe ser mayor a la puja actual.`);
         return;
     }
 
-    // Alerta de éxito al ofertar
-    mostrarAlerta("¡Su oferta ha sido registrada y enviada con éxito!", 'exito');
+    if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Su oferta ha sido registrada!", 'exito');
 
-    
-    // Emitir por Socket.io (Tiempo real instantáneo)
-    socket.emit('nueva_puja', {
-        vehiculoId: vehiculoId,
-        usuarioId: user.id,
-        monto: montoOfrecido
-    });
+    if (window.socket) {
+        window.socket.emit('nueva_puja', {
+            vehiculoId: vehiculoId,
+            usuarioId: user.id,
+            monto: montoOfrecido
+        });
+    }
+
+    inputOferta.value = '';
 }
 
 function iniciarTemporizador(fechaCierreStr) {
-    // Si ya existe un intervalo corriendo, lo limpiamos
     if (window.intervaloRelojGlobal) clearInterval(window.intervaloRelojGlobal);
-    // ...
 
     const fechaCierre = new Date(fechaCierreStr).getTime();
 
-    intervaloReloj = setInterval(() => {
+    window.intervaloRelojGlobal = setInterval(() => {
         const ahora = new Date().getTime();
         const diferencia = fechaCierre - ahora;
         const relojEl = document.getElementById('temporizador-reloj');
@@ -267,8 +258,8 @@ function iniciarTemporizador(fechaCierreStr) {
         if (!relojEl) return;
 
         if (diferencia <= 0) {
-            clearInterval(intervaloReloj);
-            relojEl.innerText = "¡OFERTA CERRADA / SUBASTA FINALIZADA!";
+            clearInterval(window.intervaloRelojGlobal);
+            relojEl.innerText = "¡SUBASTA FINALIZADA!";
             const inputAcciones = document.getElementById('contenedor-oferta-acciones');
             if (inputAcciones) inputAcciones.innerHTML = "<p style='color:red; font-weight:bold;'>El tiempo ha expirado. Ya no es posible ofertar.</p>";
             return;
@@ -280,43 +271,4 @@ function iniciarTemporizador(fechaCierreStr) {
 
         relojEl.innerText = `${horas}h ${minutos}m ${segundos}s`;
     }, 1000);
-}
-function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-    
-    if (!fotosStr) {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    }
-
-    let primeraFoto = "";
-
-    // Si la base de datos guarda las fotos como un arreglo JSON (ej: ["/uploads/img.jpg"])
-    if (typeof fotosStr === 'string' && fotosStr.trim().startsWith('[')) {
-        try {
-            const parsed = JSON.parse(fotosStr);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                primeraFoto = parsed[0];
-            }
-        } catch (e) {
-            primeraFoto = fotosStr;
-        }
-    } else if (typeof fotosStr === 'string') {
-        // Si viene separada por comas
-        primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
-    } else {
-        primeraFoto = String(fotosStr);
-    }
-
-    if (!primeraFoto || primeraFoto.trim() === "") {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    }
-
-    // Si ya es una URL web completa
-    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
-        return primeraFoto;
-    }
-
-    // Unir limpiamente con el backend de Render
-    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
-    return `${URL_BACKEND}${rutaLimpia}`;
 }
