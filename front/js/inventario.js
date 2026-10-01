@@ -38,7 +38,7 @@ async function renderizarInventario(container) {
         // 2. Obtener los datos del Backend
         const res = await fetch(`${API_URL}/vehiculos?nocache=${new Date().getTime()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error("No se pudo conectar con la base de datos");
-        
+
         const vehiculosOriginales = await res.json();
         const grid = document.getElementById('grid-inventario');
 
@@ -57,7 +57,6 @@ async function renderizarInventario(container) {
             const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
             grid.innerHTML = lista.map(v => {
-                // CORRECCIÓN: Usamos 'v' en lugar de 'vehiculo'
                 const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
                 const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
@@ -89,6 +88,47 @@ async function renderizarInventario(container) {
             }).join('');
         }
 
+        const filtros = {
+            texto: '',
+            tipo: '',
+            dano: ''
+        };
+
+        const inputBuscar = document.getElementById('input-buscar');
+        const filtroTipo = document.getElementById('filtro-tipo');
+        const filtroDano = document.getElementById('filtro-dano');
+
+        const actualizarFiltros = () => {
+            filtros.texto = inputBuscar.value.trim().toLowerCase();
+            filtros.tipo = filtroTipo.value;
+            filtros.dano = filtroDano.value;
+
+            const listaFiltrada = vehiculosOriginales.filter(v => {
+                const textoVehiculo = `${v.marca || ''} ${v.modelo || ''}`.toLowerCase();
+                const coincideTexto = !filtros.texto || textoVehiculo.includes(filtros.texto);
+                const coincideTipo = !filtros.tipo || (v.tipo_vehiculo || v.tipo) === filtros.tipo;
+                const coincideDano = !filtros.dano || (v.estado_dano || 'Verde') === filtros.dano;
+                return coincideTexto && coincideTipo && coincideDano;
+            });
+
+            pintarTarjetas(listaFiltrada);
+        };
+
+        inputBuscar.addEventListener('input', actualizarFiltros);
+        filtroTipo.addEventListener('change', actualizarFiltros);
+        filtroDano.addEventListener('change', actualizarFiltros);
+
+        pintarTarjetas(vehiculosOriginales);
+
+    } catch (error) {
+        const grid = document.getElementById('grid-inventario');
+        if (grid) {
+            grid.innerHTML = '<p style="grid-column: 1 / -1; color: #c62828;">No se pudo cargar el inventario. Intente nuevamente.</p>';
+        }
+        console.error('Error cargando inventario:', error);
+    }
+}
+
 async function cargarVehiculosDesdeAPI() {
     try {
         const res = await fetch(`${API_URL}/vehiculos`);
@@ -104,7 +144,7 @@ async function cargarVehiculosDesdeAPI() {
 function mostrarVehiculosEnGrid(vehiculos) {
     const grid = document.getElementById('lista-vehiculos-grid');
     if (!grid) return;
-    
+
     if (!Array.isArray(vehiculos)) {
         grid.innerHTML = '<p>Error de formato al leer los vehículos.</p>';
         return;
