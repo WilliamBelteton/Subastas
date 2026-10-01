@@ -178,3 +178,43 @@ async function cargarVehiculosDesdeAPI() {
         document.getElementById('lista-vehiculos-grid').innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
     }
 }
+
+function obtenerUrlFoto(fotosStr) {
+    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    
+    if (!fotosStr) {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    let primeraFoto = "";
+
+    // Si la base de datos guarda las fotos como un arreglo JSON (ej: ["/uploads/img.jpg"])
+    if (typeof fotosStr === 'string' && fotosStr.trim().startsWith('[')) {
+        try {
+            const parsed = JSON.parse(fotosStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                primeraFoto = parsed[0];
+            }
+        } catch (e) {
+            primeraFoto = fotosStr;
+        }
+    } else if (typeof fotosStr === 'string') {
+        // Si viene separada por comas
+        primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
+    } else {
+        primeraFoto = String(fotosStr);
+    }
+
+    if (!primeraFoto || primeraFoto.trim() === "") {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    // Si ya es una URL web completa
+    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
+        return primeraFoto;
+    }
+
+    // Unir limpiamente con el backend de Render
+    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
+    return `${URL_BACKEND}${rutaLimpia}`;
+}
