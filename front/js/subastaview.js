@@ -42,7 +42,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
     try {
         const res = await fetch(`${API_URL}/vehiculos?nocache=${new Date().getTime()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error("No se pudo conectar con el servidor");
-        
+
         const vehiculos = await res.json();
         // Comparación estricta numérica para evitar fallos de tipo (string vs number)
         const vehiculo = vehiculos.find(v => Number(v.id) === Number(vehiculoId));
@@ -59,7 +59,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         if (fotosString) {
             let parsedFotos = fotosString;
             if (typeof parsedFotos === 'string' && parsedFotos.trim().startsWith('[')) {
-                try { parsedFotos = JSON.parse(parsedFotos); } 
+                try { parsedFotos = JSON.parse(parsedFotos); }
                 catch (e) { parsedFotos = parsedFotos.split(','); }
             } else if (typeof parsedFotos === 'string') {
                 parsedFotos = parsedFotos.split(',');
@@ -75,10 +75,13 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         if (!fotos || fotos.length === 0) fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
 
         // Se usa vehiculo.monto devuelto por el servidor (con COALESCE)
-        const montoActual = vehiculo.monto !== undefined && vehiculo.monto !== null ? vehiculo.monto : vehiculo.precio_base;
+        // Asegúrate de que lea explícitamente el 'monto' calculado por el servidor con COALESCE
+        const montoActual = (vehiculo.monto !== undefined && vehiculo.monto !== null && vehiculo.monto !== "")
+            ? vehiculo.monto
+            : vehiculo.precio_base;
+
         const precioFormateado = Number(montoActual).toLocaleString();
         const precioBaseLote = Number(vehiculo.precio_base).toLocaleString();
-
         const user = obtenerUsuarioActual();
         let badgeStyle = 'background: #e2e3e5; color: #383d41;';
         let badgeText = 'Esperando ofertas... ¡Sé el primero!';
@@ -128,7 +131,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         `;
 
         if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
-        
+
         if (typeof iniciarTemporizador === 'function' && vehiculo.fecha_cierre) {
             iniciarTemporizador(vehiculo.fecha_cierre.replace(' ', 'T'));
         }
@@ -144,8 +147,8 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 // =========================================================================
 document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'form-registro') {
-        e.preventDefault(); 
-        
+        e.preventDefault();
+
         const nombreValor = document.getElementById('reg-nombre').value.trim();
         const apellidoValor = document.getElementById('reg-apellido').value.trim();
         const emailValor = document.getElementById('reg-email').value.trim();
@@ -158,19 +161,19 @@ document.addEventListener('submit', async (e) => {
         }
 
         const data = { nombre: nombreValor, apellido: apellidoValor, correo: emailValor, telefono: telefonoValor, password: passValor };
-        
+
         try {
             const res = await fetch(`${API_URL}/auth/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            
+
             const resultado = await res.json();
-            
+
             if (res.ok) {
                 alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                if (typeof cambiarVista === 'function') cambiarVista('login'); 
+                if (typeof cambiarVista === 'function') cambiarVista('login');
             } else {
                 alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
             }
@@ -187,17 +190,17 @@ function cambiarFotoPrincipal(url) {
 // =========================================================================
 // 4. CONEXIÓN A SOCKET.IO (Unificada con URL_BACKEND)
 // =========================================================================
-var socket; 
+var socket;
 if (typeof io !== 'undefined') {
     socket = io(URL_BACKEND);
-    window.socket = socket; 
+    window.socket = socket;
 
     socket.on('actualizacion_puja', (data) => {
         const elMonto = document.getElementById('monto-actual');
         const badge = document.getElementById('badge-estado-puja');
-        
+
         if (elMonto) elMonto.innerText = `Q. ${Number(data.nuevaPuja).toLocaleString()}`;
-        
+
         const user = obtenerUsuarioActual();
         if (badge) {
             if (user && Number(data.usuarioGanadorId) === Number(user.id)) {
