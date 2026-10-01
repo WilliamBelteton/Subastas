@@ -261,3 +261,27 @@ document.addEventListener('DOMContentLoaded', () => {
         cambiarVista('home', null, false);
     }
 });
+// Función universal para obtener la foto de manera blindada
+function obtenerUrlFoto(fotosStr) {
+    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    
+    if (!fotosStr || typeof fotosStr !== 'string' || fotosStr.trim() === "") {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    // Separar por comas si hay varias fotos y tomar la primera, limpiando comillas o espacios extras
+    let primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
+
+    if (!primeraFoto) {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    // Si ya es una URL web completa, la devolvemos tal cual
+    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
+        return primeraFoto;
+    }
+
+    // Si es una ruta relativa, unimos con el backend de Render asegurando la barra inicial
+    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
+    return `${URL_BACKEND}${rutaLimpia}`;
+}
