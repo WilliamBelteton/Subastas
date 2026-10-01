@@ -207,18 +207,22 @@ app.put('/api/vehiculos/:id', async (req, res) => {
 });
 
 // Ruta corregida a async/await para vehículos por usuario
-app.get('/api/vehiculos/usuario/:id', async (req, res) => {
-    const usuarioId = req.params.id;
+app.get('/api/vehiculos', async (req, res) => {
     try {
-        const query = 'SELECT * FROM vehiculos WHERE usuario_id = ?';
-        const [results] = await db.execute(query, [usuarioId]);
-        res.json(results);
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Error al obtener los vehículos del usuario' });
+        // Obtenemos los vehículos sumando la puja más alta y el ID del ganador actual
+        const query = `
+            SELECT v.*, 
+                   (SELECT MAX(monto) FROM pujas WHERE vehiculo_id = v.id) AS monto,
+                   (SELECT usuario_id FROM pujas WHERE vehiculo_id = v.id ORDER BY monto DESC LIMIT 1) AS ganador_id
+            FROM vehiculos v
+        `;
+        const [vehiculos] = await db.query(query);
+        return res.status(200).json(vehiculos);
+    } catch (error) {
+        console.error("-> ERROR AL OBTENER VEHÍCULOS:", error.message);
+        return res.status(500).json({ error: 'Error al obtener el inventario' });
     }
 });
-
 // =========================================================
 // GESTIÓN DE TIEMPO REAL CON SOCKET.IO
 // =========================================================
@@ -230,25 +234,36 @@ io.on('connection', (socket) => {
     });
 
     socket.on('nueva_puja', async (data) => {
-        console.log("-> Intento de puja recibido por Sockets:", data);
         const { vehiculoId, usuarioId, monto } = data;
 
         try {
-            const [vehiculoRows] = await db.execute('SELECT precio_base, fecha_cierre FROM vehiculos WHERE id = ?', [vehiculoId]);
+            // 1. Obtener precio base
+            const [vehiculoRows] = await db.execute('SELECT precio_base FROM vehiculos WHERE id = ?', [vehiculoId]);
             if (vehiculoRows.length === 0) return socket.emit('error_puja', 'Vehículo no encontrado');
             
+            const precioBase = vehiculoRows[0].precio_base;
+
+            // 2. Obtener la puja máxima histórica de ese vehículo
+            const [pujasRows] = await db.execute('SELECT MAX(monto) as max_monto FROM pujas WHERE vehiculo_id = ?', [vehiculoId]);
+            const pujaActual = pujasRows[0].max_monto ? pujasRows[0].max_monto : precioBase;
+
+            // 3. VALIDACIÓN ESTRICTA: Si la puja es menor o igual, la rebotamos
+            if (monto <= pujaActual) {
+                return socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(pujaActual).toLocaleString()}`);
+            }
+
+            // 4. Si es válida, insertamos la puja
             const insertQuery = 'INSERT INTO pujas (vehiculo_id, usuario_id, monto) VALUES (?, ?, ?)';
             await db.execute(insertQuery, [vehiculoId, usuarioId, monto]);
             
-            console.log(`-> Puja guardada en BD: Vehiculo ${vehiculoId} | Usuario ${usuarioId} | Monto ${monto}`);
-
+            // 5. Emitir actualización a todos los conectados
             io.to(`vehiculo_${vehiculoId}`).emit('actualizacion_puja', {
                 nuevaPuja: monto,
                 usuarioGanadorId: usuarioId 
             });
 
         } catch (error) {
-            console.error("-> ERROR FATAL GUARDANDO PUJA EN MYSQL:", error.message);
+            console.error("-> ERROR GUARDANDO PUJA:", error.message);
             socket.emit('error_puja', 'Error interno al procesar la puja.');
         }
     });

@@ -73,12 +73,13 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         const precioFormateado = Number(montoActual).toLocaleString();
         const precioBaseLote = Number(vehiculo.precio_base).toLocaleString();
 
+        // 4. Verificar quién va ganando (AHORA USANDO ganador_id)
         const user = obtenerUsuarioActual();
         let badgeStyle = 'background: #e2e3e5; color: #383d41;';
         let badgeText = 'Esperando ofertas... ¡Sé el primero!';
 
-        if (vehiculo.usuario_id) {
-            if (user && vehiculo.usuario_id == user.id) {
+        if (vehiculo.ganador_id) {
+            if (user && vehiculo.ganador_id == user.id) {
                 badgeStyle = 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
                 badgeText = '¡Vas ganando esta subasta!';
             } else {
