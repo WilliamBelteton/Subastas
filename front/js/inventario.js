@@ -57,7 +57,7 @@ async function renderizarInventario(container) {
             const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
             grid.innerHTML = lista.map(v => {
-                // Procesamiento correcto de la foto usando la variable 'v' del bucle
+                // CORRECCIÓN: Usamos 'v' en lugar de 'vehiculo'
                 const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
                 const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
@@ -88,45 +88,6 @@ async function renderizarInventario(container) {
                 `;
             }).join('');
         }
-
-        // Pintar inicialmente todos los vehículos
-        pintarTarjetas(vehiculosOriginales);
-
-        // 3. Lógica interactiva de los filtros en tiempo real
-        const inputBuscar = document.getElementById('input-buscar');
-        const filtroTipo = document.getElementById('filtro-tipo');
-        const filtroDano = document.getElementById('filtro-dano');
-
-        function aplicarFiltros() {
-            const texto = inputBuscar.value.toLowerCase().trim();
-            const tipoSeleccionado = filtroTipo.value;
-            const danoSeleccionado = filtroDano.value;
-
-            const filtrados = vehiculosOriginales.filter(v => {
-                const marcaModelo = `${v.marca || ''} ${v.modelo || ''} ${v.anio || ''}`.toLowerCase();
-                const coincideTexto = marcaModelo.includes(texto);
-                const coincideTipo = !tipoSeleccionado || v.tipo_articulo === tipoSeleccionado;
-                const coincideDano = !danoSeleccionado || v.estado_dano === danoSeleccionado;
-
-                return coincideTexto && coincideTipo && coincideDano;
-            });
-
-            pintarTarjetas(filtrados);
-        }
-
-        inputBuscar.addEventListener('input', aplicarFiltros);
-        filtroTipo.addEventListener('change', aplicarFiltros);
-        filtroDano.addEventListener('change', aplicarFiltros);
-
-    } catch (error) {
-        console.error("Error al renderizar inventario:", error);
-        document.getElementById('grid-inventario').innerHTML = `
-            <div style="grid-column: 1 / -1; padding: 20px; background: #fff3f3; border: 1px solid #ffcdd2; color: #d32f2f; border-radius: 6px;">
-                <strong>Error de conexión:</strong> No se pudo cargar el inventario. Verifica que tu servidor Node.js esté encendido.
-            </div>
-        `;
-    }
-}
 
 async function cargarVehiculosDesdeAPI() {
     try {
