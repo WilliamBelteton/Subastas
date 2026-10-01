@@ -148,6 +148,7 @@ function renderizarVistaLogin(container) {
 // VISTA: REGISTRO DE USUARIO NUEVO
 // =========================================================
 
+// 1. ESTA FUNCIÓN AHORA SOLO DIBUJA EL HTML (Sin lógica adentro)
 function renderizarVistaRegistro(container) {
     container.innerHTML = `
         <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -187,25 +188,21 @@ function renderizarVistaRegistro(container) {
             </div>
         </div>
     `;
+}
 
-    // 💡 CAMBIO CLAVE: Buscamos el formulario DENTRO del container, no en el document
-    const formElement = container.querySelector('#form-registro');
-    
-    if (!formElement) {
-        console.error("❌ ERROR: El contenedor no tiene el formulario.");
-        return;
-    }
-
-    formElement.addEventListener('submit', async (e) => {
-        e.preventDefault();
+// 2. LA LÓGICA VA AQUÍ AFUERA (Delegación de eventos global)
+// Esto escucha en toda la página y reacciona SOLAMENTE si el formulario enviado es el de registro.
+document.addEventListener('submit', async (e) => {
+    // Verificamos que el envío provenga exactamente de nuestro formulario de registro
+    if (e.target && e.target.id === 'form-registro') {
+        e.preventDefault(); // Evitamos que la página se recargue
         console.log("✅ 1. Botón presionado. Leyendo datos...");
         
-        // 💡 CAMBIO CLAVE: Buscamos los inputs DENTRO del container
-        const nombreValor = container.querySelector('#reg-nombre').value.trim();
-        const apellidoValor = container.querySelector('#reg-apellido').value.trim();
-        const emailValor = container.querySelector('#reg-email').value.trim();
-        const telefonoValor = container.querySelector('#reg-telefono').value.trim();
-        const passValor = container.querySelector('#reg-pass').value;
+        const nombreValor = document.getElementById('reg-nombre').value.trim();
+        const apellidoValor = document.getElementById('reg-apellido').value.trim();
+        const emailValor = document.getElementById('reg-email').value.trim();
+        const telefonoValor = document.getElementById('reg-telefono').value.trim();
+        const passValor = document.getElementById('reg-pass').value;
 
         if (passValor.length < 4) {
             alert("La contraseña debe tener un mínimo de 4 caracteres.");
@@ -235,7 +232,7 @@ function renderizarVistaRegistro(container) {
             
             if (res.ok) {
                 alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                cambiarVista('login'); 
+                if (typeof cambiarVista === 'function') cambiarVista('login'); 
             } else {
                 alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
             }
@@ -243,8 +240,8 @@ function renderizarVistaRegistro(container) {
             console.error("❌ 5. Fallo al conectar con el servidor:", err);
             alert("No se pudo conectar con el servidor. Revisa tu internet.");
         }
-    });
-}
+    }
+});
 async function procesarLogin(e) {
     e.preventDefault();
     const correo = document.getElementById('login-correo').value;
