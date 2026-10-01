@@ -207,6 +207,10 @@ app.put('/api/vehiculos/:id', async (req, res) => {
 });
 
 // Ruta corregida a async/await para vehículos por usuario
+// =========================================================
+// RUTAS DE VEHÍCULOS (Única versión permitida)
+// =========================================================
+
 app.get('/api/vehiculos', async (req, res) => {
     try {
         const query = `
@@ -218,10 +222,6 @@ app.get('/api/vehiculos', async (req, res) => {
             FROM vehiculos v
         `;
         const [vehiculos] = await db.query(query);
-        
-        // 👉 AGREGA ESTA LÍNEA PARA VER QUÉ DEVUELVE SQL EN LOS LOGS DE RENDER:
-        console.log("-> Vehículos obtenidos con su monto máximo:", vehiculos.map(v => ({ id: v.id, monto: v.monto })));
-
         return res.status(200).json(vehiculos);
     } catch (error) {
         console.error("-> ERROR AL OBTENER VEHÍCULOS:", error.message);
