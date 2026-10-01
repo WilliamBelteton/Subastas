@@ -124,7 +124,7 @@ async function renderizarMisPublicaciones(container) {
             let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
             
             if (fotoPortada.startsWith('/uploads/')) {
-                fotoPortada = `https://subastas-qja9.onrender.com${fotoPortada}`;
+                fotoPortada = `http://localhost:4000${fotoPortada}`;
             }
 
             const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';

@@ -49,83 +49,7 @@ function actualizarMenu() {
         console.warn("Aviso visual ignorado al cambiar el menú:", error.message);
     }
 }
-// Pegar esto en app.js, justo arriba de function cambiarVista(...)
-function renderizarVistaRegistro(container) {
-    container.innerHTML = `
-        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Registro de Usuario</h2>
-            <form id="form-registro">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                    <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Nombre:</label>
-                        <input type="text" id="reg-nombre" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Apellido:</label>
-                        <input type="text" id="reg-apellido" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Correo Electrónico:</label>
-                    <input type="email" id="reg-email" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Teléfono:</label>
-                    <input type="tel" id="reg-telefono" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Contraseña:</label>
-                    <input type="password" id="reg-pass" required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <button type="submit" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Registrarse</button>
-            </form>
-            <div style="text-align: center; margin-top: 20px;">
-                <!-- event.preventDefault() aquí evita que la página parpadee al volver al login -->
-                <a href="#" onclick="event.preventDefault(); cambiarVista('login');" style="color: #0056b3; font-weight: bold; text-decoration: none;">¿Ya tienes cuenta? Inicia sesión aquí</a>
-            </div>
-        </div>
-    `;
 
-    setTimeout(() => {
-        const formElement = container.querySelector('#form-registro');
-        if (!formElement) return;
-
-        formElement.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                nombre: container.querySelector('#reg-nombre').value.trim(),
-                apellido: container.querySelector('#reg-apellido').value.trim(),
-                correo: container.querySelector('#reg-email').value.trim(),
-                telefono: container.querySelector('#reg-telefono').value.trim(),
-                password: container.querySelector('#reg-pass').value
-            };
-
-            if (data.password.length < 4) {
-                alert("La contraseña debe tener un mínimo de 4 caracteres.");
-                return;
-            }
-
-            try {
-                const res = await fetch('https://subastas-qja9.onrender.com/api/auth/registro', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const resultado = await res.json();
-                
-                if (res.ok) {
-                    alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                    cambiarVista('login'); 
-                } else {
-                    alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
-                }
-            } catch (err) {
-                alert("No se pudo conectar con el servidor. Revisa tu internet.");
-            }
-        });
-    }, 100);
-}
 // =========================================================
 // SISTEMA DE ENRUTAMIENTO PRINCIPAL (Con Historial del Navegador)
 // =========================================================
@@ -180,16 +104,7 @@ function cambiarVista(vista, param = null, registrarHistorial = true) {
                 break;
 
             case 'registro':
-                if (typeof renderizarVistaRegistro === 'function') {
-                    renderizarVistaRegistro(container);
-                } else {
-                    container.innerHTML = `
-                        <div style="text-align:center; padding: 40px; color: red;">
-                            <h2>❌ Error de conexión de archivos</h2>
-                            <p>El navegador no encuentra la función <b>renderizarVistaRegistro</b>.</p>
-                            <p>Asegúrate de tener la etiqueta <code>&lt;script src="..."&gt;</code> en tu <b>index.html</b>.</p>
-                        </div>`;
-                }
+                if (typeof renderizarVistaRegistro === 'function') renderizarVistaRegistro(container);
                 break;
 
             default:
@@ -261,27 +176,3 @@ document.addEventListener('DOMContentLoaded', () => {
         cambiarVista('home', null, false);
     }
 });
-// Función universal para obtener la foto de manera blindada
-function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-    
-    if (!fotosStr || typeof fotosStr !== 'string' || fotosStr.trim() === "") {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    }
-
-    // Separar por comas si hay varias fotos y tomar la primera, limpiando comillas o espacios extras
-    let primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
-
-    if (!primeraFoto) {
-        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    }
-
-    // Si ya es una URL web completa, la devolvemos tal cual
-    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
-        return primeraFoto;
-    }
-
-    // Si es una ruta relativa, unimos con el backend de Render asegurando la barra inicial
-    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
-    return `${URL_BACKEND}${rutaLimpia}`;
-}
