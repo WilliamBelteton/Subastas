@@ -21,11 +21,69 @@ function renderizarLogin(container) {
 
 // =========================================================
 // VISTA: INICIAR SESIÓN
-//
 // =========================================================
 function renderizarVistaLogin(container) {
     container.innerHTML = `
-        <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Iniciar Sesión</h2>
+            <form id="form-login">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Correo Electrónico:</label>
+                    <input type="email" name="email" required placeholder="tu@correo.com" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Contraseña:</label>
+                    <input type="password" name="password" required placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Ingresar</button>
+            </form>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="#" onclick="cambiarVista('registro')" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿No tienes cuenta? Regístrate aquí</a>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const resultado = await res.json();
+            
+            if (res.ok) {
+                // Guardar datos del usuario en el navegador
+                localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
+                if (resultado.token) {
+                    localStorage.setItem('token', resultado.token);
+                }
+                
+                mostrarAlerta("¡Bienvenido de nuevo!", "exito");
+                cambiarVista('home'); // Te regresa al inventario
+            } else {
+                mostrarAlerta(resultado.error || "Credenciales incorrectas. Intenta de nuevo.", "error");
+            }
+        } catch (err) {
+            console.error("Error en login:", err);
+            mostrarAlerta("No se pudo conectar con el servidor. Revisa tu conexión.", "error");
+        }
+    });
+}
+
+// =========================================================
+// VISTA: REGISTRO DE USUARIO NUEVO
+// =========================================================
+// =========================================================
+// VISTA: INICIAR SESIÓN
+// =========================================================
+function renderizarVistaLogin(container) {
+    container.innerHTML = `
+        <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Iniciar Sesión</h2>
             <form id="form-login">
                 <div style="margin-bottom: 15px;">
@@ -39,72 +97,60 @@ function renderizarVistaLogin(container) {
                 <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Ingresar</button>
             </form>
             <div style="text-align: center; margin-top: 20px;">
-                <!-- 🔥 AQUÍ ESTÁ LA MAGIA: event.preventDefault() evita que la página parpadee o se trabe -->
-                <a href="#" onclick="event.preventDefault(); cambiarVista('registro');" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿No tienes cuenta? Regístrate aquí</a>
+                <a href="#" onclick="cambiarVista('registro')" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿No tienes cuenta? Regístrate aquí</a>
             </div>
         </div>
     `;
 
-    // Usamos el buscador dentro del contenedor para mayor seguridad, igual que en el registro
-    setTimeout(() => {
-        const formElement = container.querySelector('#form-login');
-        if (!formElement) return;
-
-        formElement.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Extraemos los valores directamente
+        const emailValor = document.getElementById('login-email').value;
+        const passValor = document.getElementById('login-pass').value;
+        
+        // Enviamos los datos en español e inglés para asegurar compatibilidad con tu Backend
+        const data = {
+            correo: emailValor,
+            contrasena: passValor,
+            email: emailValor,
+            password: passValor
+        };
+        
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
             
-            // Si no tienes API_URL definida globalmente, usa tu enlace directo:
-            const URL_BACKEND = typeof API_URL !== 'undefined' ? API_URL : 'https://subastas-qja9.onrender.com/api';
+            const resultado = await res.json();
             
-            const emailValor = container.querySelector('#login-email').value.trim();
-            const passValor = container.querySelector('#login-pass').value;
-            
-            const data = {
-                correo: emailValor,
-                contrasena: passValor,
-                email: emailValor,
-                password: passValor
-            };
-            
-            try {
-                const res = await fetch(`${URL_BACKEND}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const resultado = await res.json();
-                
-                if (res.ok) {
-                    localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
-                    if (resultado.token) {
-                        localStorage.setItem('token', resultado.token);
-                    }
-                    
-                    if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Bienvenido de nuevo!", "exito");
-                    else alert("¡Bienvenido!");
-                    
-                    cambiarVista('home'); 
-                } else {
-                    if (typeof mostrarAlerta === 'function') mostrarAlerta(resultado.error || "Credenciales incorrectas.", "error");
-                    else alert(resultado.error || "Credenciales incorrectas");
+            if (res.ok) {
+                localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
+                if (resultado.token) {
+                    localStorage.setItem('token', resultado.token);
                 }
-            } catch (err) {
-                console.error("Error en login:", err);
-                if (typeof mostrarAlerta === 'function') mostrarAlerta("No se pudo conectar con el servidor.", "error");
-                else alert("Error de conexión");
+                
+                mostrarAlerta("¡Bienvenido de nuevo!", "exito");
+                cambiarVista('home'); 
+            } else {
+                mostrarAlerta(resultado.error || resultado.mensaje || "Credenciales incorrectas.", "error");
             }
-        });
-    }, 100);
+        } catch (err) {
+            console.error("Error en login:", err);
+            mostrarAlerta("No se pudo conectar con el servidor.", "error");
+        }
+    });
 }
+
 // =========================================================
 // VISTA: REGISTRO DE USUARIO NUEVO
 // =========================================================
 
-// 1. ESTA FUNCIÓN AHORA SOLO DIBUJA EL HTML (Sin lógica adentro)
 function renderizarVistaRegistro(container) {
     container.innerHTML = `
-        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Registro de Usuario</h2>
             <form id="form-registro">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
@@ -131,6 +177,7 @@ function renderizarVistaRegistro(container) {
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Contraseña:</label>
                     <input type="password" id="reg-pass" required placeholder="Mínimo 4 caracteres" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <small style="color: #666; font-size: 0.8rem; display: block; margin-top: 4px;">Debe tener al menos 4 caracteres (números o letras).</small>
                 </div>
 
                 <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Registrarse</button>
@@ -141,15 +188,9 @@ function renderizarVistaRegistro(container) {
             </div>
         </div>
     `;
-}
 
-// 2. LA LÓGICA VA AQUÍ AFUERA (Delegación de eventos global)
-// Esto escucha en toda la página y reacciona SOLAMENTE si el formulario enviado es el de registro.
-document.addEventListener('submit', async (e) => {
-    // Verificamos que el envío provenga exactamente de nuestro formulario de registro
-    if (e.target && e.target.id === 'form-registro') {
-        e.preventDefault(); // Evitamos que la página se recargue
-        console.log("✅ 1. Botón presionado. Leyendo datos...");
+    document.getElementById('form-registro').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
         const nombreValor = document.getElementById('reg-nombre').value.trim();
         const apellidoValor = document.getElementById('reg-apellido').value.trim();
@@ -157,44 +198,51 @@ document.addEventListener('submit', async (e) => {
         const telefonoValor = document.getElementById('reg-telefono').value.trim();
         const passValor = document.getElementById('reg-pass').value;
 
+        // Validación de longitud mínima (mínimo 4 caracteres)
         if (passValor.length < 4) {
-            alert("La contraseña debe tener un mínimo de 4 caracteres.");
+            mostrarAlerta("La contraseña debe tener un mínimo de 4 caracteres.", "error");
             return;
         }
 
+        const nombreCompleto = `${nombreValor} ${apellidoValor}`;
+        
+        // Enviamos absolutamente todas las variantes posibles para que tu backend las acepte sí o sí
         const data = {
-            nombre: nombreValor,
+            nombre: nombreCompleto,
+            nombres: nombreValor,
             apellido: apellidoValor,
+            apellidos: apellidoValor,
             correo: emailValor,
+            email: emailValor,
             telefono: telefonoValor,
+            phone: telefonoValor,
+            contrasena: passValor,
             password: passValor
         };
         
-        console.log("✅ 2. Datos recopilados:", data);
-
         try {
-            console.log("✅ 3. Enviando datos a Render...");
-            const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
+            const res = await fetch(`${API_URL}/auth/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             
             const resultado = await res.json();
-            console.log("✅ 4. Respuesta de Render:", resultado); 
+            console.log("Respuesta del servidor al registrar:", resultado); // Para depurar en consola si es necesario
             
             if (res.ok) {
-                alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                if (typeof cambiarVista === 'function') cambiarVista('login'); 
+                mostrarAlerta("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.", "exito");
+                cambiarVista('login'); 
             } else {
-                alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
+                // Muestra el mensaje exacto que devuelva el servidor
+                mostrarAlerta(resultado.error || resultado.mensaje || "Ocurrió un error al crear la cuenta.", "error");
             }
         } catch (err) {
-            console.error("❌ 5. Fallo al conectar con el servidor:", err);
-            alert("No se pudo conectar con el servidor. Revisa tu internet.");
+            console.error("Error en registro:", err);
+            mostrarAlerta("No se pudo conectar con el servidor.", "error");
         }
-    }
-});
+    });
+}
 async function procesarLogin(e) {
     e.preventDefault();
     const correo = document.getElementById('login-correo').value;
