@@ -53,7 +53,7 @@ function renderizarVistaLogin(container) {
             e.preventDefault();
             
             // Si no tienes API_URL definida globalmente, usa tu enlace directo:
-            const URL_BACKEND = typeof API_URL !== 'undefined' ? API_URL : 'https://subastas-qja9.onrender.com/api';
+            const URL_BACKEND = typeof API_URL !== 'undefined' ? API_URL : 'https://subastas-7d8i.onrender.com/api';
             
             const emailValor = container.querySelector('#login-email').value.trim();
             const passValor = container.querySelector('#login-pass').value;
