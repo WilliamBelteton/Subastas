@@ -162,17 +162,12 @@ function realizarPuja(vehiculoId, precioBase) {
     });
 }
 
-function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj') {
+function iniciarCuentaRegresiva(fechaCierreStr, elementoId) {
     const elemento = document.getElementById(elementoId);
     if (!elemento) return;
 
-    // Normalizamos el formato de la fecha de MySQL (reemplazando espacio por 'T' para evitar errores de zona horaria)
-    let fechaStr = fechaCierreStr;
-    if (fechaStr && fechaStr.includes(' ')) {
-        fechaStr = fechaStr.replace(' ', 'T');
-    }
-
-    const fechaCierre = new Date(fechaStr).getTime();
+    // Convertimos la fecha de la base de datos de manera segura
+    const fechaCierre = new Date(fechaCierreStr).getTime();
 
     const intervalo = setInterval(() => {
         const ahora = new Date().getTime();
@@ -182,12 +177,6 @@ function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj
             clearInterval(intervalo);
             elemento.innerHTML = "¡Subasta Finalizada!";
             elemento.style.color = "red";
-            
-            // Opcional: Ocultar el cuadro de ofertas si el tiempo expiró
-            const contenedorAcciones = document.getElementById('contenedor-oferta-acciones');
-            if (contenedorAcciones) {
-                contenedorAcciones.innerHTML = '<p style="color: red; font-weight: bold;">El tiempo ha expirado. Ya no es posible ofertar.</p>';
-            }
             return;
         }
 
