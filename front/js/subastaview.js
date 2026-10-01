@@ -38,14 +38,15 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             return;
         }
 
-        // 2. Procesamiento ultra seguro de las fotos usando la función global
+        // 2. Procesamiento seguro de las fotos para la vista de subasta
         const fotosString = vehiculo.fotos || "";
         let fotos = [];
-        
+
         if (fotosString.trim() !== "") {
-            fotos = fotosString.split(',').map(f => obtenerUrlFoto(f));
+            // Dividimos el texto por comas y aplicamos la función global a cada elemento
+            fotos = fotosString.split(',').map(f => obtenerUrlFoto(f.trim()));
         }
-        
+
         if (fotos.length === 0) {
             fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
         }
