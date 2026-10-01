@@ -188,64 +188,62 @@ function renderizarVistaRegistro(container) {
         </div>
     `;
 
-    // Usamos un ligero retraso para asegurar que el HTML anterior ya está 100% dibujado
-    setTimeout(() => {
-        const formElement = document.getElementById('form-registro');
+    // 💡 CAMBIO CLAVE: Buscamos el formulario DENTRO del container, no en el document
+    const formElement = container.querySelector('#form-registro');
+    
+    if (!formElement) {
+        console.error("❌ ERROR: El contenedor no tiene el formulario.");
+        return;
+    }
+
+    formElement.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log("✅ 1. Botón presionado. Leyendo datos...");
         
-        if (!formElement) {
-            console.error("❌ ERROR: No se encontró el formulario en la pantalla.");
+        // 💡 CAMBIO CLAVE: Buscamos los inputs DENTRO del container
+        const nombreValor = container.querySelector('#reg-nombre').value.trim();
+        const apellidoValor = container.querySelector('#reg-apellido').value.trim();
+        const emailValor = container.querySelector('#reg-email').value.trim();
+        const telefonoValor = container.querySelector('#reg-telefono').value.trim();
+        const passValor = container.querySelector('#reg-pass').value;
+
+        if (passValor.length < 4) {
+            alert("La contraseña debe tener un mínimo de 4 caracteres.");
             return;
         }
 
-        formElement.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log("✅ 1. Botón presionado. Leyendo datos...");
+        const data = {
+            nombre: nombreValor,
+            apellido: apellidoValor,
+            correo: emailValor,
+            telefono: telefonoValor,
+            password: passValor
+        };
+        
+        console.log("✅ 2. Datos recopilados:", data);
+
+        try {
+            console.log("✅ 3. Enviando datos a Render...");
+            const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
             
-            const nombreValor = document.getElementById('reg-nombre').value.trim();
-            const apellidoValor = document.getElementById('reg-apellido').value.trim();
-            const emailValor = document.getElementById('reg-email').value.trim();
-            const telefonoValor = document.getElementById('reg-telefono').value.trim();
-            const passValor = document.getElementById('reg-pass').value;
-
-            if (passValor.length < 4) {
-                alert("La contraseña debe tener un mínimo de 4 caracteres.");
-                return;
-            }
-
-            const data = {
-                nombre: nombreValor,
-                apellido: apellidoValor,
-                correo: emailValor,
-                telefono: telefonoValor,
-                password: passValor
-            };
+            const resultado = await res.json();
+            console.log("✅ 4. Respuesta de Render:", resultado); 
             
-            console.log("✅ 2. Datos recopilados:", data);
-
-            try {
-                console.log("✅ 3. Enviando datos a Render...");
-                // Hemos puesto tu URL directa para evitar errores de variables no definidas
-                const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const resultado = await res.json();
-                console.log("✅ 4. Respuesta de Render:", resultado); 
-                
-                if (res.ok) {
-                    alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                    cambiarVista('login'); 
-                } else {
-                    alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
-                }
-            } catch (err) {
-                console.error("❌ 5. Fallo al conectar con el servidor:", err);
-                alert("No se pudo conectar con el servidor. Revisa tu internet.");
+            if (res.ok) {
+                alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+                cambiarVista('login'); 
+            } else {
+                alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
             }
-        });
-    }, 100);
+        } catch (err) {
+            console.error("❌ 5. Fallo al conectar con el servidor:", err);
+            alert("No se pudo conectar con el servidor. Revisa tu internet.");
+        }
+    });
 }
 async function procesarLogin(e) {
     e.preventDefault();
