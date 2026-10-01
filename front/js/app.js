@@ -1,4 +1,3 @@
-// URL base del Backend Node.js
 const API_URL = 'https://subastas-7d8i.onrender.com';
 
 // =========================================================
