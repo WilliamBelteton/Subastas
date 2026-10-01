@@ -128,19 +128,34 @@ app.get('/api/vehiculos', async (req, res) => {
 });
 
 // Configuración de Multer para imágenes
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+// =========================================================
+// CONFIGURACIÓN DE CLOUDINARY Y MULTER
+// =========================================================
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// 1. Configurar credenciales leyendo tu archivo .env
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// 2. Crear el almacenamiento en la nube en lugar de tu disco local
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'subastas_express', // Carpeta automática en tu Cloudinary
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
     }
 });
+
 const upload = multer({ storage: storage });
 
+// Mantenemos esto por si hay fotos viejas que aún intentan cargar localmente
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// 3. Ruta de publicación actualizada
 app.post('/api/vehiculos', upload.array('fotos', 10), async (req, res) => {
     console.log("-> Petición de publicación recibida");
     try {
@@ -151,7 +166,8 @@ app.post('/api/vehiculos', upload.array('fotos', 10), async (req, res) => {
             return res.status(400).json({ error: 'La regla de negocio exige un mínimo de 5 fotografías.' });
         }
 
-        const rutasFotos = archivos.map(file => `/uploads/${file.filename}`).join(',');
+        // EL CAMBIO CLAVE: Cloudinary devuelve la URL pública permanente en 'file.path'
+        const rutasFotos = archivos.map(file => file.path).join(',');
 
         const query = `INSERT INTO vehiculos (usuario_id, anio, tipo_articulo, marca, modelo, motor, transmision, combustible, tren_manejo, cilindros, estado_dano, fotos, precio_base, fecha_inicio, fecha_cierre) 
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
