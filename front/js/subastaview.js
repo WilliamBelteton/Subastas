@@ -250,15 +250,21 @@ if (typeof io !== 'undefined') {
 
 function realizarPuja(vehiculoId, precioBase) {
     const user = obtenerUsuarioActual();
+    
     if (!user) {
-        alert("Debe iniciar sesión para ofertar.");
+        // Quitamos el alert() nativo y usamos tu función personalizada
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta("Debe iniciar sesión para ofertar.", 'error');
+        }
+        
+        // Redirigimos a la vista de login
         cambiarVista('login');
         return;
     }
 
     const inputOferta = document.getElementById('input-nueva-oferta');
     if (!inputOferta) return;
-
+    
     const montoOfrecido = parseFloat(inputOferta.value);
     const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
     const montoActual = parseFloat(montoActualTexto);
