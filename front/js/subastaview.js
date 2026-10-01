@@ -13,11 +13,19 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         }
 
 // 1. Proteger y arreglar las rutas de las fotos...
-        const fotosString = vehiculo.fotos || "";
-        let fotos = fotosString ? fotosString.split(',') : [];
-        if (fotos.length === 0) fotos.push('https://via.placeholder.com/600x400?text=Sin+Imagen');
-        fotos = fotos.map(f => f.startsWith('/uploads/') ? `https://subastas-qja9.onrender.com${f}` : f);
+       // Asegúrate de usar esta lógica para formatear las fotos de forma segura
+const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+const fotosString = vehiculo.fotos || "";
+let fotos = fotosString ? fotosString.split(',') : [];
 
+if (fotos.length === 0 || fotos[0].trim() === "") {
+    fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
+} else {
+    fotos = fotos.map(f => {
+        let rutaLimpia = f.trim();
+        return rutaLimpia.startsWith('http') ? rutaLimpia : `${URL_BACKEND}${rutaLimpia}`;
+    });
+}
         // =========================================================
         // AQUÍ ESTÁ LA MAGIA: LEER LA PUJA MÁXIMA DE LA BD
         // =========================================================
@@ -109,36 +117,72 @@ if (typeof io !== 'undefined') {
     window.socket = socket; // Respaldo global
 
     // Escuchar cuando la puja sube en tiempo real
-    socket.on('nueva_puja', async (data) => {
-    const { vehiculoId, usuarioId, monto } = data;
-
-    try {
-        const [rows] = await pool.query('SELECT precio_base, monto FROM vehiculos WHERE id = ?', [vehiculoId]);
-        if (rows.length === 0) return;
-
-        const vehiculo = rows[0];
-        const montoMinimoRequerido = vehiculo.monto ? vehiculo.monto : vehiculo.precio_base;
-
-        if (monto <= montoMinimoRequerido) {
-            socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(montoMinimoRequerido).toLocaleString()}`);
-            return;
+    socket.on('actualizacion_puja', (data) => {
+        const elMonto = document.getElementById('monto-actual');
+        const badge = document.getElementById('badge-estado-puja');
+        
+        if (elMonto) elMonto.innerText = `Q. ${Number(data.nuevaPuja).toLocaleString()}`;
+        
+        const user = obtenerUsuarioActual();
+        if (badge) {
+            if (user && data.usuarioGanadorId == user.id) {
+                badge.style.background = '#d4edda';
+                badge.style.color = '#155724';
+                badge.innerText = "¡Vas ganando esta subasta!";
+            } else {
+                badge.style.background = '#f8d7da';
+                badge.style.color = '#721c24';
+                badge.innerText = "Tu oferta ha sido superada. ¡Haz tu oferta ahora!";
+            }
         }
+    });
 
-        await pool.query(
-            'UPDATE vehiculos SET monto = ?, usuario_id = ? WHERE id = ?',
-            [monto, usuarioId, vehiculoId]
-        );
+    // Escuchar errores de pujas devueltos por el servidor
+    socket.on('error_puja', (mensaje) => {
+        mostrarAlerta(mensaje, 'error');
+    });
+}
 
-        io.to(vehiculoId).emit('actualizacion_puja', {
-            nuevaPuja: monto,
-            usuarioGanadorId: usuarioId
-        });
-
-    } catch (err) {
-        console.error("Error al procesar la puja:", err);
-        socket.emit('error_puja', "Hubo un error al registrar tu oferta en el servidor.");
+function realizarPuja(vehiculoId, precioBaseLote) {
+    const user = obtenerUsuarioActual();
+    if (!user) {
+        alert("Debe iniciar sesión para ofertar.");
+        cambiarVista('login');
+        return;
     }
-});
+
+    const inputOferta = document.getElementById('input-nueva-oferta');
+    if (!inputOferta) return;
+    
+    const montoOfrecido = parseFloat(inputOferta.value);
+    
+    const textoActual = document.getElementById('monto-actual').innerText;
+    const montoActual = parseFloat(textoActual.replace('Q.', '').replace(/,/g, '').trim()) || precioBaseLote;
+
+    if (isNaN(montoOfrecido) || montoOfrecido <= montoActual) {
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(`La oferta debe ser estrictamente mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
+        } else {
+            alert(`La oferta debe ser mayor a Q. ${montoActual.toLocaleString()}`);
+        }
+        return;
+    }
+
+    // Usamos el socket global de forma segura
+    const socketActivo = window.socket || (typeof socket !== 'undefined' ? socket : null);
+    
+    if (!socketActivo) {
+        alert("Error de conexión en tiempo real con el servidor.");
+        return;
+    }
+
+    socketActivo.emit('nueva_puja', {
+        vehiculoId: vehiculoId,
+        usuarioId: user.id,
+        monto: montoOfrecido
+    });
+
+    inputOferta.value = '';
 }
 
 function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj') {
