@@ -132,8 +132,11 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
         if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
 
+        // Quita el .replace(' ', 'T') de aquí, lo manejaremos de forma más segura adentro
         if (typeof iniciarTemporizador === 'function' && vehiculo.fecha_cierre) {
-            iniciarTemporizador(vehiculo.fecha_cierre.replace(' ', 'T'));
+            iniciarTemporizador(vehiculo.fecha_cierre);
+        } else {
+            document.getElementById('temporizador-reloj').innerText = "Fecha de cierre no definida";
         }
 
     } catch (err) {
@@ -236,7 +239,7 @@ function realizarPuja(vehiculoId, precioBase) {
     const montoOfrecido = parseFloat(inputOferta.value);
     const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
     const montoActual = parseFloat(montoActualTexto);
-    
+
     // REGLA DEL 10%: Calculamos el mínimo requerido
     const minimoRequerido = montoActual * 1.10;
 
@@ -261,29 +264,57 @@ function realizarPuja(vehiculoId, precioBase) {
 }
 
 function iniciarTemporizador(fechaCierreStr) {
-    if (window.intervaloRelojGlobal) clearInterval(window.intervaloRelojGlobal);
+    // 1. Limpiar cualquier intervalo anterior para evitar parpadeos/cruces
+    if (window.intervaloRelojGlobal) {
+        clearInterval(window.intervaloRelojGlobal);
+    }
 
-    const fechaCierre = new Date(fechaCierreStr).getTime();
+    // 2. Parseo seguro de la fecha (por si viene de SQL con espacio o como ISO string de Node)
+    const fechaSegura = typeof fechaCierreStr === 'string' ? fechaCierreStr.replace(' ', 'T') : fechaCierreStr;
+    const fechaCierre = new Date(fechaSegura).getTime();
 
-    window.intervaloRelojGlobal = setInterval(() => {
+    const relojEl = document.getElementById('temporizador-reloj');
+    if (!relojEl) return;
+
+    // Si la fecha es inválida, mostrar el error en pantalla en lugar de quedarse "Calculando..."
+    if (isNaN(fechaCierre)) {
+        relojEl.innerText = "Error en fecha";
+        return;
+    }
+
+    // 3. Extraemos la lógica a una función para poder llamarla INMEDIATAMENTE
+    const actualizarReloj = () => {
         const ahora = new Date().getTime();
         const diferencia = fechaCierre - ahora;
-        const relojEl = document.getElementById('temporizador-reloj');
 
-        if (!relojEl) return;
-
+        // Si el tiempo ya expiró
         if (diferencia <= 0) {
             clearInterval(window.intervaloRelojGlobal);
             relojEl.innerText = "¡SUBASTA FINALIZADA!";
             const inputAcciones = document.getElementById('contenedor-oferta-acciones');
-            if (inputAcciones) inputAcciones.innerHTML = "<p style='color:red; font-weight:bold;'>El tiempo ha expirado. Ya no es posible ofertar.</p>";
+            if (inputAcciones) {
+                inputAcciones.innerHTML = "<p style='color:red; font-weight:bold;'>El tiempo ha expirado. Ya no es posible ofertar.</p>";
+            }
             return;
-        }x  
+        }
 
+        // Cálculos matemáticos correctos (incluyendo días)
+        const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
         const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
         const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-        relojEl.innerText = `${horas}h ${minutos}m ${segundos}s`;
-    }, 1000);
+        // Formatear el texto (solo mostrar días si es mayor a 0)
+        let textoReloj = "";
+        if (dias > 0) textoReloj += `${dias}d `;
+        textoReloj += `${horas}h ${minutos}m ${segundos}s`;
+
+        relojEl.innerText = textoReloj;
+    };
+
+    // 4. Ejecutar de inmediato (esto quita el "Calculando..." sin esperar 1 segundo)
+    actualizarReloj();
+
+    // 5. Iniciar el intervalo para que se repita cada segundo
+    window.intervaloRelojGlobal = setInterval(actualizarReloj, 1000);
 }
