@@ -167,7 +167,7 @@ function mostrarVehiculosEnGrid(vehiculos) {
         
         // Si la foto es una ruta local del servidor, agregarle la URL del backend
         if (fotoPortada.startsWith('/uploads/')) {
-            fotoPortada = `http://localhost:4000${fotoPortada}`;
+            fotoPortada = `https://subastas-qja9.onrender.com/api${fotoPortada}`;
         }
 
         // Proteger el precio
