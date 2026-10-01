@@ -38,7 +38,7 @@ async function renderizarInventario(container) {
         // 2. Obtener los datos del Backend
         const res = await fetch(`${API_URL}/vehiculos?nocache=${new Date().getTime()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error("No se pudo conectar con la base de datos");
-
+        
         const vehiculosOriginales = await res.json();
         const grid = document.getElementById('grid-inventario');
 
@@ -57,6 +57,7 @@ async function renderizarInventario(container) {
             const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
             grid.innerHTML = lista.map(v => {
+                // Procesamiento correcto de la foto usando la variable 'v' del bucle
                 const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
                 const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
@@ -88,47 +89,96 @@ async function renderizarInventario(container) {
             }).join('');
         }
 
-        const filtros = {
-            texto: '',
-            tipo: '',
-            dano: ''
-        };
+        // Pintar inicialmente todos los vehículos
+        pintarTarjetas(vehiculosOriginales);
 
+        // 3. Lógica interactiva de los filtros en tiempo real
         const inputBuscar = document.getElementById('input-buscar');
         const filtroTipo = document.getElementById('filtro-tipo');
         const filtroDano = document.getElementById('filtro-dano');
 
-        const actualizarFiltros = () => {
-            filtros.texto = inputBuscar.value.trim().toLowerCase();
-            filtros.tipo = filtroTipo.value;
-            filtros.dano = filtroDano.value;
+        function aplicarFiltros() {
+            const texto = inputBuscar.value.toLowerCase().trim();
+            const tipoSeleccionado = filtroTipo.value;
+            const danoSeleccionado = filtroDano.value;
 
-            const listaFiltrada = vehiculosOriginales.filter(v => {
-                const textoVehiculo = `${v.marca || ''} ${v.modelo || ''}`.toLowerCase();
-                const coincideTexto = !filtros.texto || textoVehiculo.includes(filtros.texto);
-                const coincideTipo = !filtros.tipo || (v.tipo_vehiculo || v.tipo) === filtros.tipo;
-                const coincideDano = !filtros.dano || (v.estado_dano || 'Verde') === filtros.dano;
+            const filtrados = vehiculosOriginales.filter(v => {
+                const marcaModelo = `${v.marca || ''} ${v.modelo || ''} ${v.anio || ''}`.toLowerCase();
+                const coincideTexto = marcaModelo.includes(texto);
+                const coincideTipo = !tipoSeleccionado || v.tipo_articulo === tipoSeleccionado;
+                const coincideDano = !danoSeleccionado || v.estado_dano === danoSeleccionado;
+
                 return coincideTexto && coincideTipo && coincideDano;
             });
 
-            pintarTarjetas(listaFiltrada);
-        };
+            pintarTarjetas(filtrados);
+        }
 
-        inputBuscar.addEventListener('input', actualizarFiltros);
-        filtroTipo.addEventListener('change', actualizarFiltros);
-        filtroDano.addEventListener('change', actualizarFiltros);
-
-        pintarTarjetas(vehiculosOriginales);
+        inputBuscar.addEventListener('input', aplicarFiltros);
+        filtroTipo.addEventListener('change', aplicarFiltros);
+        filtroDano.addEventListener('change', aplicarFiltros);
 
     } catch (error) {
-        const grid = document.getElementById('grid-inventario');
-        if (grid) {
-            grid.innerHTML = '<p style="grid-column: 1 / -1; color: #c62828;">No se pudo cargar el inventario. Intente nuevamente.</p>';
-        }
-        console.error('Error cargando inventario:', error);
+        console.error("Error al renderizar inventario:", error);
+        document.getElementById('grid-inventario').innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 20px; background: #fff3f3; border: 1px solid #ffcdd2; color: #d32f2f; border-radius: 6px;">
+                <strong>Error de conexión:</strong> No se pudo cargar el inventario. Verifica que tu servidor Node.js esté encendido.
+            </div>
+        `;
     }
 }
 
+async function cargarVehiculosDesdeAPI() {
+    try {
+        const res = await fetch(`${API_URL}/vehiculos`);
+        const todosLosVehiculos = await res.json();
+        mostrarVehiculosEnGrid(todosLosVehiculos);
+    } catch (err) {
+        console.error(err);
+        const grid = document.getElementById('lista-vehiculos-grid');
+        if (grid) grid.innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
+    }
+}
+
+function mostrarVehiculosEnGrid(vehiculos) {
+    const grid = document.getElementById('lista-vehiculos-grid');
+    if (!grid) return;
+    
+    if (!Array.isArray(vehiculos)) {
+        grid.innerHTML = '<p>Error de formato al leer los vehículos.</p>';
+        return;
+    }
+
+    if (vehiculos.length === 0) {
+        grid.innerHTML = '<p>No se encontraron vehículos registrados en la base de datos.</p>';
+        return;
+    }
+
+    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+
+    grid.innerHTML = vehiculos.map(v => {
+        const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
+        const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+        const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
+
+        return `
+            <div class="card-vehiculo">
+                <img src="${fotoPortada}" class="card-img" alt="Vehículo">
+                <div class="card-body">
+                    <span class="badge-dano dano-${v.estado_dano || 'Verde'}">Daño: ${v.estado_dano || 'No especificado'}</span>
+                    <div class="card-title">${v.anio || ''} ${v.marca || 'Marca desconocida'} ${v.modelo || ''}</div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">
+                        Motor: ${v.motor || 'N/A'} | Transmisión: ${v.transmision || 'N/A'}
+                    </p>
+                    <p style="font-weight: bold; color: var(--primary);">Precio Base: Q. ${precioBase}</p>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="cambiarVista('detalle-subasta', ${v.id})">
+                        Ver Subasta en Vivo
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 async function cargarVehiculosDesdeAPI() {
     try {
         const res = await fetch(`${API_URL}/vehiculos`);
