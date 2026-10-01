@@ -1,4 +1,4 @@
-// =========================================================
+//// =========================================================
 // VISTA: INICIAR SESIÓN
 // =========================================================
 function renderizarVistaLogin(container) {
@@ -36,7 +36,6 @@ function renderizarVistaLogin(container) {
             if (typeof mostrarAlerta === 'function') mostrarAlerta("Iniciando sesión...", "exito"); 
 
             try {
-                // Validación para no duplicar /api/api
                 const rutaLogin = typeof API_URL !== 'undefined' 
                     ? (API_URL.endsWith('/api') ? `${API_URL}/auth/login` : `${API_URL}/api/auth/login`)
                     : 'https://subastas-7d8i.onrender.com/api/auth/login';
@@ -132,7 +131,6 @@ function renderizarVistaRegistro(container) {
             if (typeof mostrarAlerta === 'function') mostrarAlerta("Procesando registro... (Si el servidor estaba inactivo, tomará unos segundos).", "exito");
 
             try {
-                // Validación para no duplicar /api/api
                 const rutaRegistro = typeof API_URL !== 'undefined' 
                     ? (API_URL.endsWith('/api') ? `${API_URL}/auth/registro` : `${API_URL}/api/auth/registro`)
                     : 'https://subastas-7d8i.onrender.com/api/auth/registro';

@@ -1,50 +1,8 @@
 // =========================================================================
 // CONFIGURACIÓN GLOBAL DE URLS (Apunta a tu backend en Render)
 // =========================================================================
-const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
-const API_URL = `${URL_BACKEND}/api`;
-
-function extraerMensajeLimpiado(data) {
-    if (!data) return "Ocurrió un error inesperado.";
-    if (typeof data === 'string') {
-        try {
-            const parseado = JSON.parse(data);
-            return parseado.error || parseado.mensaje || parseado.message || "Error en la operación";
-        } catch (e) { return data; }
-    }
-    if (typeof data === 'object') return data.error || data.mensaje || data.message || "Ocurrió un problema.";
-    return String(data);
-}
 // =========================================================================
-// 1. FUNCIÓN GLOBAL DE FOTOS
-// =========================================================================
-function obtenerUrlFoto(fotosStr) {
-    if (!fotosStr) return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-
-    let primeraFoto = "";
-
-    if (typeof fotosStr === 'string' && fotosStr.trim().startsWith('[')) {
-        try {
-            const parsed = JSON.parse(fotosStr);
-            if (Array.isArray(parsed) && parsed.length > 0) primeraFoto = parsed[0];
-        } catch (e) {
-            primeraFoto = fotosStr;
-        }
-    } else if (typeof fotosStr === 'string') {
-        primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
-    } else {
-        primeraFoto = String(fotosStr);
-    }
-
-    if (!primeraFoto || primeraFoto.trim() === "") return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
-    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) return primeraFoto;
-
-    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
-    return `${URL_BACKEND}${rutaLimpia}`;
-}
-
-// =========================================================================
-// 2. RENDERIZADO DE LA VISTA DE SUBASTA
+// 1. RENDERIZADO DE LA VISTA DE SUBASTA
 // =========================================================================
 async function renderizarVistaSubasta(container, vehiculoId) {
     if (!container) return;
@@ -55,7 +13,6 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         if (!res.ok) throw new Error("No se pudo conectar con el servidor");
 
         const vehiculos = await res.json();
-        // Comparación estricta numérica para evitar fallos de tipo (string vs number)
         const vehiculo = vehiculos.find(v => Number(v.id) === Number(vehiculoId));
 
         if (!vehiculo) {
@@ -63,7 +20,6 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             return;
         }
 
-        // Procesamiento seguro de fotos para la galería
         const fotosString = vehiculo.fotos;
         let fotos = [];
 
@@ -85,8 +41,6 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
         if (!fotos || fotos.length === 0) fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
 
-        // Se usa vehiculo.monto devuelto por el servidor (con COALESCE)
-        // Asegúrate de que lea explícitamente el 'monto' calculado por el servidor con COALESCE
         const montoActual = (vehiculo.monto !== undefined && vehiculo.monto !== null && vehiculo.monto !== "")
             ? vehiculo.monto
             : vehiculo.precio_base;
@@ -143,7 +97,6 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
         if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
 
-        // Quita el .replace(' ', 'T') de aquí, lo manejaremos de forma más segura adentro
         if (typeof iniciarTemporizador === 'function' && vehiculo.fecha_cierre) {
             iniciarTemporizador(vehiculo.fecha_cierre);
         } else {
@@ -156,64 +109,15 @@ async function renderizarVistaSubasta(container, vehiculoId) {
     }
 }
 
-// =========================================================================
-// =========================================================================
-// 3. REGISTRO Y FUNCIONES GLOBALES
-// =========================================================================
-// ---> REEMPLAZA TU EVENT LISTENER ACTUAL POR ESTE <---
-document.addEventListener('submit', async (e) => {
-    if (e.target && e.target.id === 'form-registro') {
-        e.preventDefault();
-
-        const nombreValor = document.getElementById('reg-nombre').value.trim();
-        const apellidoValor = document.getElementById('reg-apellido').value.trim();
-        const emailValor = document.getElementById('reg-email').value.trim();
-        const telefonoValor = document.getElementById('reg-telefono').value.trim();
-        const passValor = document.getElementById('reg-pass').value;
-
-        if (passValor.length < 4) {
-            alert("La contraseña debe tener un mínimo de 4 caracteres.");
-            return;
-        }
-
-        const data = { nombre: nombreValor, apellido: apellidoValor, correo: emailValor, telefono: telefonoValor, password: passValor };
-
-        try {
-            const res = await fetch(`${API_URL}/auth/registro`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            let resultado;
-            try { resultado = await res.json(); } catch(err) { resultado = "Error de conexión con el servidor."; }
-
-            const mensajeFinal = extraerMensajeLimpiado(resultado);
-
-            if (res.ok) {
-                if (typeof mostrarAlerta === 'function') mostrarAlerta(mensajeFinal || "¡Cuenta creada exitosamente!", 'exito');
-                else alert(mensajeFinal || "¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
-                
-                if (typeof cambiarVista === 'function') cambiarVista('login');
-            } else {
-                if (typeof mostrarAlerta === 'function') mostrarAlerta("Error: " + mensajeFinal, 'error');
-                else alert("Error: " + mensajeFinal);
-            }
-        } catch (err) {
-            alert("No se pudo conectar con el servidor. Revisa tu internet.");
-        }
-    }
-});
-
 function cambiarFotoPrincipal(url) {
     document.getElementById('imagen-principal-carrusel').src = url;
 }
 
 // =========================================================================
-// 4. CONEXIÓN A SOCKET.IO (Unificada con URL_BACKEND)
+// 2. CONEXIÓN A SOCKET.IO
 // =========================================================================
 var socket;
-if (typeof io !== 'undefined') {
+if (typeof io !== 'undefined' && typeof URL_BACKEND !== 'undefined') {
     socket = io(URL_BACKEND);
     window.socket = socket;
 
@@ -238,8 +142,8 @@ if (typeof io !== 'undefined') {
         }
     });
 
-   socket.on('error_puja', (data) => {
-        const textoLimpio = extraerMensajeLimpiado(data);
+    socket.on('error_puja', (data) => {
+        const textoLimpio = typeof extraerMensajeLimpiado === 'function' ? extraerMensajeLimpiado(data) : String(data);
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta(textoLimpio, 'error');
         } else {
@@ -252,12 +156,9 @@ function realizarPuja(vehiculoId, precioBase) {
     const user = obtenerUsuarioActual();
     
     if (!user) {
-        // Quitamos el alert() nativo y usamos tu función personalizada
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta("Debe iniciar sesión para ofertar.", 'error');
         }
-        
-        // Redirigimos a la vista de login
         cambiarVista('login');
         return;
     }
@@ -269,7 +170,6 @@ function realizarPuja(vehiculoId, precioBase) {
     const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
     const montoActual = parseFloat(montoActualTexto);
 
-    // REGLA DEL 10%: Calculamos el mínimo requerido
     const minimoRequerido = montoActual * 1.10;
 
     if (isNaN(montoOfrecido) || montoOfrecido < minimoRequerido) {
@@ -293,30 +193,25 @@ function realizarPuja(vehiculoId, precioBase) {
 }
 
 function iniciarTemporizador(fechaCierreStr) {
-    // 1. Limpiar cualquier intervalo anterior para evitar parpadeos/cruces
     if (window.intervaloRelojGlobal) {
         clearInterval(window.intervaloRelojGlobal);
     }
 
-    // 2. Parseo seguro de la fecha (por si viene de SQL con espacio o como ISO string de Node)
     const fechaSegura = typeof fechaCierreStr === 'string' ? fechaCierreStr.replace(' ', 'T') : fechaCierreStr;
     const fechaCierre = new Date(fechaSegura).getTime();
 
     const relojEl = document.getElementById('temporizador-reloj');
     if (!relojEl) return;
 
-    // Si la fecha es inválida, mostrar el error en pantalla en lugar de quedarse "Calculando..."
     if (isNaN(fechaCierre)) {
         relojEl.innerText = "Error en fecha";
         return;
     }
 
-    // 3. Extraemos la lógica a una función para poder llamarla INMEDIATAMENTE
     const actualizarReloj = () => {
         const ahora = new Date().getTime();
         const diferencia = fechaCierre - ahora;
 
-        // Si el tiempo ya expiró
         if (diferencia <= 0) {
             clearInterval(window.intervaloRelojGlobal);
             relojEl.innerText = "¡SUBASTA FINALIZADA!";
@@ -327,13 +222,11 @@ function iniciarTemporizador(fechaCierreStr) {
             return;
         }
 
-        // Cálculos matemáticos correctos (incluyendo días)
         const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
         const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
         const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-        // Formatear el texto (solo mostrar días si es mayor a 0)
         let textoReloj = "";
         if (dias > 0) textoReloj += `${dias}d `;
         textoReloj += `${horas}h ${minutos}m ${segundos}s`;
@@ -341,9 +234,6 @@ function iniciarTemporizador(fechaCierreStr) {
         relojEl.innerText = textoReloj;
     };
 
-    // 4. Ejecutar de inmediato (esto quita el "Calculando..." sin esperar 1 segundo)
     actualizarReloj();
-
-    // 5. Iniciar el intervalo para que se repita cada segundo
     window.intervaloRelojGlobal = setInterval(actualizarReloj, 1000);
 }
