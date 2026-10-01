@@ -106,7 +106,7 @@ function renderizarVistaRegistro(container) {
             }
 
             try {
-                const res = await fetch('https://subastas-qja9.onrender.com/api/auth/registro', {
+                const res = await fetch('https://subastas-7d8i.onrender.com/api/auth/registro', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
