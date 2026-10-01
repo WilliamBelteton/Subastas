@@ -168,13 +168,13 @@ function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj
     const elemento = document.getElementById(elementoId);
     if (!elemento) return;
 
-    // Normalizamos el formato de la fecha de MySQL (reemplazando espacio por 'T' para evitar errores de zona horaria)
-    let fechaStr = fechaCierreStr;
-    if (fechaStr && fechaStr.includes(' ')) {
-        fechaStr = fechaStr.replace(' ', 'T');
+    // Limpiamos la fecha para separar fecha y hora de forma segura (ej: "2026-09-30T19:50")
+    let fechaLimpia = fechaCierreStr;
+    if (fechaLimpia.includes(' ')) {
+        fechaLimpia = fechaLimpia.replace(' ', 'T');
     }
 
-    const fechaCierre = new Date(fechaStr).getTime();
+    const fechaCierre = new Date(fechaLimpia).getTime();
 
     const intervalo = setInterval(() => {
         const ahora = new Date().getTime();
@@ -185,7 +185,6 @@ function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj
             elemento.innerHTML = "¡Subasta Finalizada!";
             elemento.style.color = "red";
             
-            // Opcional: Ocultar el cuadro de ofertas si el tiempo expiró
             const contenedorAcciones = document.getElementById('contenedor-oferta-acciones');
             if (contenedorAcciones) {
                 contenedorAcciones.innerHTML = '<p style="color: red; font-weight: bold;">El tiempo ha expirado. Ya no es posible ofertar.</p>';
