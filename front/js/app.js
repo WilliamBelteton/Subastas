@@ -104,9 +104,17 @@ function cambiarVista(vista, param = null, registrarHistorial = true) {
                 break;
 
             case 'registro':
-                if (typeof renderizarVistaRegistro === 'function') renderizarVistaRegistro(container);
+                if (typeof renderizarVistaRegistro === 'function') {
+                    renderizarVistaRegistro(container);
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align:center; padding: 40px; color: red;">
+                            <h2>❌ Error de conexión de archivos</h2>
+                            <p>El navegador no encuentra la función <b>renderizarVistaRegistro</b>.</p>
+                            <p>Asegúrate de tener la etiqueta <code>&lt;script src="..."&gt;</code> en tu <b>index.html</b>.</p>
+                        </div>`;
+                }
                 break;
-
             default:
                 container.innerHTML = '<h2>Página no encontrada</h2>';
                 break;
