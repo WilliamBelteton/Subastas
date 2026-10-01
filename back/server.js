@@ -213,42 +213,29 @@ io.on('connection', (socket) => {
         socket.join(`vehiculo_${vehiculoId}`);
     });
 
-    // Ejemplo de lo que debe hacer tu backend al recibir 'nueva_puja'
-socket.on('nueva_puja', async (data) => {
-    const { vehiculoId, usuarioId, monto } = data;
+    socket.on('nueva_puja', async (data) => {
+        console.log("-> Intento de puja recibido por Sockets:", data);
+        const { vehiculoId, usuarioId, monto } = data;
 
-    try {
-        // 1. Consultar el vehículo actual para validar el precio base o puja máxima anterior
-        const [rows] = await db.query('SELECT precio_base, puja_maxima FROM vehiculos WHERE id = ?', [vehiculoId]);
-        if (rows.length === 0) return;
+        try {
+            const [vehiculoRows] = await db.execute('SELECT precio_base, fecha_cierre FROM vehiculos WHERE id = ?', [vehiculoId]);
+            if (vehiculoRows.length === 0) return socket.emit('error_puja', 'Vehículo no encontrado');
+            
+            const insertQuery = 'INSERT INTO pujas (vehiculo_id, usuario_id, monto) VALUES (?, ?, ?)';
+            await db.execute(insertQuery, [vehiculoId, usuarioId, monto]);
+            
+            console.log(`-> Puja guardada en BD: Vehiculo ${vehiculoId} | Usuario ${usuarioId} | Monto ${monto}`);
 
-        const vehiculo = rows[0];
-        const montoMinimoRequerido = vehiculo.puja_maxima ? vehiculo.puja_maxima : vehiculo.precio_base;
+            io.to(`vehiculo_${vehiculoId}`).emit('actualizacion_puja', {
+                nuevaPuja: monto,
+                usuarioGanadorId: usuarioId 
+            });
 
-        // 2. Validar que la nueva oferta sea estrictamente mayor
-        if (monto <= montoMinimoRequerido) {
-            socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(montoMinimoRequerido).toLocaleString()}`);
-            return;
+        } catch (error) {
+            console.error("-> ERROR FATAL GUARDANDO PUJA EN MYSQL:", error.message);
+            socket.emit('error_puja', 'Error interno al procesar la puja.');
         }
-
-        // 3. GUARDAR EN LA BASE DE DATOS (Esto soluciona que se pierda al recargar)
-        await db.query(
-            'UPDATE vehiculos SET puja_maxima = ?, ganador_id = ? WHERE id = ?',
-            [monto, usuarioId, vehiculoId]
-        );
-
-        // 4. Emitir a todos los clientes conectados en la sala del vehículo
-        io.to(vehiculoId).emit('actualizacion_puja', {
-            nuevaPuja: monto,
-            usuarioGanadorId: usuarioId
-        });
-
-    } catch (err) {
-        console.error("Error al procesar la puja:", err);
-        socket.emit('error_puja', "Hubo un error al registrar tu oferta en el servidor.");
-    }
-});
-
+    });
 });
 
 const PORT = process.env.PORT || 4000;
