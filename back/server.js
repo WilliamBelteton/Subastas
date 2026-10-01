@@ -212,6 +212,7 @@ app.put('/api/vehiculos/:id', async (req, res) => {
 // =========================================================
 
 app.get('/api/vehiculos', async (req, res) => {
+    console.log("🔥 ALGUIEN ESTÁ PIDIENDO LOS VEHÍCULOS DESDE LA NUEVA RUTA COALESCE 🔥");
     try {
         const query = `
             SELECT v.id, v.usuario_id, v.anio, v.tipo_articulo, v.marca, v.modelo, v.motor, 
@@ -228,7 +229,6 @@ app.get('/api/vehiculos', async (req, res) => {
         return res.status(500).json({ error: 'Error al obtener el inventario' });
     }
 });
-
 // =========================================================
 // GESTIÓN DE TIEMPO REAL CON SOCKET.IO
 // =========================================================
