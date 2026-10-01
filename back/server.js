@@ -228,6 +228,7 @@ app.get('/api/vehiculos', async (req, res) => {
         return res.status(500).json({ error: 'Error al obtener el inventario' });
     }
 });
+
 // =========================================================
 // GESTIÓN DE TIEMPO REAL CON SOCKET.IO
 // =========================================================
