@@ -54,18 +54,12 @@ async function renderizarInventario(container) {
                 return;
             }
 
+            const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+
             grid.innerHTML = lista.map(v => {
-                // Asegúrate de definir la URL de tu backend
-const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-
-// Al armar el HTML de tu tarjeta, haz esto con la variable de las fotos:
-const fotoRuta = vehiculo.fotos ? vehiculo.fotos.split(',')[0] : '';
-const imagenCompleta = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
-
-// Y en tu template HTML:
-`
-<img src="${imagenCompleta}" alt="Vehículo" style="width: 100px; height: 80px; object-fit: cover;">
-`
+                // Procesamiento correcto de la foto usando la variable 'v' del bucle
+                const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
+                const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
                 const precioActual = v.puja_maxima ? v.puja_maxima : v.precio_base;
                 const precioFormateado = Number(precioActual).toLocaleString();
@@ -133,48 +127,38 @@ const imagenCompleta = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}$
         `;
     }
 }
+
 async function cargarVehiculosDesdeAPI() {
     try {
         const res = await fetch(`${API_URL}/vehiculos`);
-        todosLosVehiculos = await res.json();
+        const todosLosVehiculos = await res.json();
         mostrarVehiculosEnGrid(todosLosVehiculos);
     } catch (err) {
         console.error(err);
-        document.getElementById('lista-vehiculos-grid').innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
+        const grid = document.getElementById('lista-vehiculos-grid');
+        if (grid) grid.innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
     }
 }
 
 function mostrarVehiculosEnGrid(vehiculos) {
     const grid = document.getElementById('lista-vehiculos-grid');
+    if (!grid) return;
     
-    // 1. Validar que el backend sí devolvió un arreglo válido
     if (!Array.isArray(vehiculos)) {
-        console.error("Los datos recibidos no son un arreglo válido:", vehiculos);
         grid.innerHTML = '<p>Error de formato al leer los vehículos.</p>';
         return;
     }
 
-    // 2. Si no hay vehículos
     if (vehiculos.length === 0) {
         grid.innerHTML = '<p>No se encontraron vehículos registrados en la base de datos.</p>';
         return;
     }
 
-    // 3. Dibujar las tarjetas protegiendo campos nulos
+    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+
     grid.innerHTML = vehiculos.map(v => {
-        // Proteger el campo fotos en caso de que sea null
-       // Asegúrate de definir la URL de tu backend
-const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-
-// Al armar el HTML de tu tarjeta, haz esto con la variable de las fotos:
-const fotoRuta = vehiculo.fotos ? vehiculo.fotos.split(',')[0] : '';
-const imagenCompleta = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
-
-// Y en tu template HTML:
-`
-<img src="${imagenCompleta}" alt="Vehículo" style="width: 100px; height: 80px; object-fit: cover;">
-`
-        // Proteger el precio
+        const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
+        const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
         const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
 
         return `
