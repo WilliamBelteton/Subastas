@@ -12,29 +12,12 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             return;
         }
 
-// // 1. Proteger y formatear las fotos de manera blindada
-    const fotosString = vehiculo.fotos || "";
-let fotos = fotosString ? fotosString.split(',').map(f => obtenerUrlFoto(f)) : ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
+// 1. Proteger y arreglar las rutas de las fotos...
+        const fotosString = vehiculo.fotos || "";
+        let fotos = fotosString ? fotosString.split(',') : [];
+        if (fotos.length === 0) fotos.push('https://via.placeholder.com/600x400?text=Sin+Imagen');
+        fotos = fotos.map(f => f.startsWith('/uploads/') ? `https://subastas-qja9.onrender.com${f}` : f);
 
-    if (fotosString.trim() !== "") {
-        // Limpiamos comillas o espacios extras que pueda traer la base de datos
-        fotos = fotosString.split(',').map(f => f.trim().replace(/['"]+/g, ''));
-    }
-
-    // Si no hay fotos válidas, ponemos una imagen por defecto
-    if (fotos.length === 0 || fotos[0] === "") {
-        fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
-    } else {
-        // Aseguramos que todas comiencen con la URL de Render si son rutas relativas
-        fotos = fotos.map(f => {
-            if (f.startsWith('http://') || f.startsWith('https://')) {
-                return f;
-            }
-            // Si empieza con barra o no, la unimos limpiamente con el backend
-            const rutaLimpia = f.startsWith('/') ? f : `/${f}`;
-            return `https://subastas-qja9.onrender.com${rutaLimpia}`;
-        });
-    }
         // =========================================================
         // AQUÍ ESTÁ LA MAGIA: LEER LA PUJA MÁXIMA DE LA BD
         // =========================================================

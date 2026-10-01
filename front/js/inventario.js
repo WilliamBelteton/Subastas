@@ -54,12 +54,14 @@ async function renderizarInventario(container) {
                 return;
             }
 
-            const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-
             grid.innerHTML = lista.map(v => {
-                // Procesamiento correcto de la foto usando la variable 'v' del bucle
-                const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
-                const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+                const fotosString = v.fotos || "";
+                const fotosArray = fotosString ? fotosString.split(',') : [];
+                let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
+                
+                if (fotoPortada.startsWith('/uploads/')) {
+                    fotoPortada = `http://localhost:4000${fotoPortada}`;
+                }
 
                 const precioActual = v.puja_maxima ? v.puja_maxima : v.precio_base;
                 const precioFormateado = Number(precioActual).toLocaleString();
@@ -127,89 +129,48 @@ async function renderizarInventario(container) {
         `;
     }
 }
-
 async function cargarVehiculosDesdeAPI() {
     try {
         const res = await fetch(`${API_URL}/vehiculos`);
-        const todosLosVehiculos = await res.json();
+        todosLosVehiculos = await res.json();
         mostrarVehiculosEnGrid(todosLosVehiculos);
     } catch (err) {
         console.error(err);
-        const grid = document.getElementById('lista-vehiculos-grid');
-        if (grid) grid.innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
+        document.getElementById('lista-vehiculos-grid').innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
     }
 }
 
 function mostrarVehiculosEnGrid(vehiculos) {
     const grid = document.getElementById('lista-vehiculos-grid');
-    if (!grid) return;
     
+    // 1. Validar que el backend sí devolvió un arreglo válido
     if (!Array.isArray(vehiculos)) {
+        console.error("Los datos recibidos no son un arreglo válido:", vehiculos);
         grid.innerHTML = '<p>Error de formato al leer los vehículos.</p>';
         return;
     }
 
+    // 2. Si no hay vehículos
     if (vehiculos.length === 0) {
         grid.innerHTML = '<p>No se encontraron vehículos registrados en la base de datos.</p>';
         return;
     }
 
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-
+    // 3. Dibujar las tarjetas protegiendo campos nulos
     grid.innerHTML = vehiculos.map(v => {
-        const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
-        const fotoPortada = obtenerUrlFoto(v.fotos);
-        const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
+        // Proteger el campo fotos en caso de que sea null
+        const fotosString = v.fotos || ""; 
+        const fotosArray = fotosString ? fotosString.split(',') : [];
+        
+        // Obtener la portada, si no tiene, poner una de relleno
+        let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
+        
+        // Si la foto es una ruta local del servidor, agregarle la URL del backend
+        if (fotoPortada.startsWith('/uploads/')) {
+            fotoPortada = `http://localhost:4000${fotoPortada}`;
+        }
 
-        return `
-            <div class="card-vehiculo">
-                <img src="${fotoPortada}" class="card-img" alt="Vehículo">
-                <div class="card-body">
-                    <span class="badge-dano dano-${v.estado_dano || 'Verde'}">Daño: ${v.estado_dano || 'No especificado'}</span>
-                    <div class="card-title">${v.anio || ''} ${v.marca || 'Marca desconocida'} ${v.modelo || ''}</div>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">
-                        Motor: ${v.motor || 'N/A'} | Transmisión: ${v.transmision || 'N/A'}
-                    </p>
-                    <p style="font-weight: bold; color: var(--primary);">Precio Base: Q. ${precioBase}</p>
-                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="cambiarVista('detalle-subasta', ${v.id})">
-                        Ver Subasta en Vivo
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-async function cargarVehiculosDesdeAPI() {
-    try {
-        const res = await fetch(`${API_URL}/vehiculos`);
-        const todosLosVehiculos = await res.json();
-        mostrarVehiculosEnGrid(todosLosVehiculos);
-    } catch (err) {
-        console.error(err);
-        const grid = document.getElementById('lista-vehiculos-grid');
-        if (grid) grid.innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
-    }
-}
-
-function mostrarVehiculosEnGrid(vehiculos) {
-    const grid = document.getElementById('lista-vehiculos-grid');
-    if (!grid) return;
-
-    if (!Array.isArray(vehiculos)) {
-        grid.innerHTML = '<p>Error de formato al leer los vehículos.</p>';
-        return;
-    }
-
-    if (vehiculos.length === 0) {
-        grid.innerHTML = '<p>No se encontraron vehículos registrados en la base de datos.</p>';
-        return;
-    }
-
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-
-    grid.innerHTML = vehiculos.map(v => {
-        const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
-        const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
+        // Proteger el precio
         const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
 
         return `
