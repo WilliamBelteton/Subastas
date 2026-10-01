@@ -46,23 +46,23 @@ function renderizarVistaLogin(container) {
     document.getElementById('form-login').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
-        
+
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            
+
             const resultado = await res.json();
-            
+
             if (res.ok) {
                 // Guardar datos del usuario en el navegador
                 localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
                 if (resultado.token) {
                     localStorage.setItem('token', resultado.token);
                 }
-                
+
                 mostrarAlerta("¡Bienvenido de nuevo!", "exito");
                 cambiarVista('home'); // Te regresa al inventario
             } else {
@@ -104,11 +104,11 @@ function renderizarVistaLogin(container) {
 
     document.getElementById('form-login').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // Extraemos los valores directamente
         const emailValor = document.getElementById('login-email').value;
         const passValor = document.getElementById('login-pass').value;
-        
+
         // Enviamos los datos en español e inglés para asegurar compatibilidad con tu Backend
         const data = {
             correo: emailValor,
@@ -116,24 +116,24 @@ function renderizarVistaLogin(container) {
             email: emailValor,
             password: passValor
         };
-        
+
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            
+
             const resultado = await res.json();
-            
+
             if (res.ok) {
                 localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
                 if (resultado.token) {
                     localStorage.setItem('token', resultado.token);
                 }
-                
+
                 mostrarAlerta("¡Bienvenido de nuevo!", "exito");
-                cambiarVista('home'); 
+                cambiarVista('home');
             } else {
                 mostrarAlerta(resultado.error || resultado.mensaje || "Credenciales incorrectas.", "error");
             }
@@ -191,7 +191,7 @@ function renderizarVistaRegistro(container) {
 
     document.getElementById('form-registro').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const nombreValor = document.getElementById('reg-nombre').value.trim();
         const apellidoValor = document.getElementById('reg-apellido').value.trim();
         const emailValor = document.getElementById('reg-email').value.trim();
@@ -205,7 +205,7 @@ function renderizarVistaRegistro(container) {
         }
 
         const nombreCompleto = `${nombreValor} ${apellidoValor}`;
-        
+
         // Enviamos absolutamente todas las variantes posibles para que tu backend las acepte sí o sí
         const data = {
             nombre: nombreCompleto,
@@ -219,20 +219,21 @@ function renderizarVistaRegistro(container) {
             contrasena: passValor,
             password: passValor
         };
-        
+
         try {
-            const res = await fetch(`${API_URL}/auth/registro`, {
+        
+            // CORRECTO:
+            const respuesta = await fetch('https://subastas-qja9.onrender.com/api/auth/registro', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(datosUsuario)
             });
-            
             const resultado = await res.json();
             console.log("Respuesta del servidor al registrar:", resultado); // Para depurar en consola si es necesario
-            
+
             if (res.ok) {
                 mostrarAlerta("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.", "exito");
-                cambiarVista('login'); 
+                cambiarVista('login');
             } else {
                 // Muestra el mensaje exacto que devuelva el servidor
                 mostrarAlerta(resultado.error || resultado.mensaje || "Ocurrió un error al crear la cuenta.", "error");
@@ -256,13 +257,13 @@ async function procesarLogin(e) {
         });
         const data = await res.json();
         if (res.ok) {
-    localStorage.setItem('usuario', JSON.stringify(data.usuario));
-    mostrarAlerta(`¡Bienvenido de nuevo, ${data.usuario.nombre}!`, 'exito');
-    setTimeout(() => cambiarVista('home'), 1000); // Pequeña pausa para leer el mensaje
-} else {
-    // Mensaje amigable si fallan las credenciales
-    mostrarAlerta("Correo electrónico o contraseña incorrectos. Por favor, verifique sus datos.", 'error');
-}
+            localStorage.setItem('usuario', JSON.stringify(data.usuario));
+            mostrarAlerta(`¡Bienvenido de nuevo, ${data.usuario.nombre}!`, 'exito');
+            setTimeout(() => cambiarVista('home'), 1000); // Pequeña pausa para leer el mensaje
+        } else {
+            // Mensaje amigable si fallan las credenciales
+            mostrarAlerta("Correo electrónico o contraseña incorrectos. Por favor, verifique sus datos.", 'error');
+        }
     } catch (err) {
         console.error(err);
         alert("Error de conexión con el servidor.");
@@ -293,17 +294,17 @@ async function procesarRegistro(e) {
         const data = await res.json();
         console.log("Respuesta del servidor:", data);
 
-       if (res.ok) {
-    mostrarAlerta("¡Cuenta creada con éxito! Ya puede iniciar sesión.", 'exito');
-    setTimeout(() => cambiarVista('login'), 1500);
-} else {
-    // Si el correo ya está registrado
-    if (data.error && data.error.includes('ER_DUP_ENTRY')) {
-        mostrarAlerta("Este correo electrónico ya se encuentra registrado en el sistema.", 'error');
-    } else {
-        mostrarAlerta("No se pudo completar el registro. Verifique que todos los campos sean correctos.", 'error');
-    }
-}
+        if (res.ok) {
+            mostrarAlerta("¡Cuenta creada con éxito! Ya puede iniciar sesión.", 'exito');
+            setTimeout(() => cambiarVista('login'), 1500);
+        } else {
+            // Si el correo ya está registrado
+            if (data.error && data.error.includes('ER_DUP_ENTRY')) {
+                mostrarAlerta("Este correo electrónico ya se encuentra registrado en el sistema.", 'error');
+            } else {
+                mostrarAlerta("No se pudo completar el registro. Verifique que todos los campos sean correctos.", 'error');
+            }
+        }
     } catch (err) {
         console.error("Error de conexión:", err);
         alert("No se pudo conectar con el servidor backend. ¿Está encendido node server.js?");
