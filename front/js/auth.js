@@ -189,58 +189,62 @@ function renderizarVistaRegistro(container) {
         </div>
     `;
 
+    // Asegúrate de que API_URL esté declarada en este archivo o globalmente. 
+    // Si no lo está, descomenta y usa la siguiente línea con tu enlace real de Render:
+    // const API_URL = 'https://subastas-qja9.onrender.com/api';
+
     document.getElementById('form-registro').addEventListener('submit', async (e) => {
         e.preventDefault();
-
+        
         const nombreValor = document.getElementById('reg-nombre').value.trim();
         const apellidoValor = document.getElementById('reg-apellido').value.trim();
         const emailValor = document.getElementById('reg-email').value.trim();
         const telefonoValor = document.getElementById('reg-telefono').value.trim();
         const passValor = document.getElementById('reg-pass').value;
 
-        // Validación de longitud mínima (mínimo 4 caracteres)
         if (passValor.length < 4) {
-            mostrarAlerta("La contraseña debe tener un mínimo de 4 caracteres.", "error");
+            // Si la función mostrarAlerta no existe, el código fallará aquí en silencio.
+            // Usamos un alert() nativo como respaldo de seguridad.
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta("La contraseña debe tener un mínimo de 4 caracteres.", "error");
+            } else {
+                alert("La contraseña debe tener un mínimo de 4 caracteres.");
+            }
             return;
         }
 
-        const nombreCompleto = `${nombreValor} ${apellidoValor}`;
-
-        // Enviamos absolutamente todas las variantes posibles para que tu backend las acepte sí o sí
+        // Enviamos EXACTAMENTE lo que tu backend está pidiendo (ni más, ni menos)
         const data = {
-            nombre: nombreCompleto,
-            nombres: nombreValor,
+            nombre: nombreValor,
             apellido: apellidoValor,
-            apellidos: apellidoValor,
             correo: emailValor,
-            email: emailValor,
             telefono: telefonoValor,
-            phone: telefonoValor,
-            contrasena: passValor,
             password: passValor
         };
-
-        try {
         
-            // CORRECTO:
-            const respuesta = await fetch('https://subastas-qja9.onrender.com/api/auth/registro', {
+        try {
+            const res = await fetch(`${API_URL}/auth/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosUsuario)
+                body: JSON.stringify(data)
             });
+            
             const resultado = await res.json();
-            console.log("Respuesta del servidor al registrar:", resultado); // Para depurar en consola si es necesario
-
+            console.log("Respuesta del servidor al registrar:", resultado); 
+            
             if (res.ok) {
-                mostrarAlerta("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.", "exito");
-                cambiarVista('login');
+                if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.", "exito");
+                else alert("¡Cuenta creada exitosamente!");
+                
+                cambiarVista('login'); 
             } else {
-                // Muestra el mensaje exacto que devuelva el servidor
-                mostrarAlerta(resultado.error || resultado.mensaje || "Ocurrió un error al crear la cuenta.", "error");
+                if (typeof mostrarAlerta === 'function') mostrarAlerta(resultado.error || "Ocurrió un error al crear la cuenta.", "error");
+                else alert(resultado.error || "Error al crear la cuenta");
             }
         } catch (err) {
-            console.error("Error en registro:", err);
-            mostrarAlerta("No se pudo conectar con el servidor.", "error");
+            console.error("Error crítico en registro:", err);
+            if (typeof mostrarAlerta === 'function') mostrarAlerta("No se pudo conectar con el servidor.", "error");
+            else alert("No se pudo conectar con el servidor. Revisa tu internet o la URL de la API.");
         }
     });
 }
