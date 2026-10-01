@@ -150,7 +150,7 @@ function renderizarVistaLogin(container) {
 
 function renderizarVistaRegistro(container) {
     container.innerHTML = `
-        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Registro de Usuario</h2>
             <form id="form-registro">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
@@ -177,7 +177,6 @@ function renderizarVistaRegistro(container) {
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Contraseña:</label>
                     <input type="password" id="reg-pass" required placeholder="Mínimo 4 caracteres" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    <small style="color: #666; font-size: 0.8rem; display: block; margin-top: 4px;">Debe tener al menos 4 caracteres (números o letras).</small>
                 </div>
 
                 <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Registrarse</button>
@@ -189,64 +188,64 @@ function renderizarVistaRegistro(container) {
         </div>
     `;
 
-    // Asegúrate de que API_URL esté declarada en este archivo o globalmente. 
-    // Si no lo está, descomenta y usa la siguiente línea con tu enlace real de Render:
-    // const API_URL = 'https://subastas-qja9.onrender.com/api';
-
-    document.getElementById('form-registro').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Usamos un ligero retraso para asegurar que el HTML anterior ya está 100% dibujado
+    setTimeout(() => {
+        const formElement = document.getElementById('form-registro');
         
-        const nombreValor = document.getElementById('reg-nombre').value.trim();
-        const apellidoValor = document.getElementById('reg-apellido').value.trim();
-        const emailValor = document.getElementById('reg-email').value.trim();
-        const telefonoValor = document.getElementById('reg-telefono').value.trim();
-        const passValor = document.getElementById('reg-pass').value;
-
-        if (passValor.length < 4) {
-            // Si la función mostrarAlerta no existe, el código fallará aquí en silencio.
-            // Usamos un alert() nativo como respaldo de seguridad.
-            if (typeof mostrarAlerta === 'function') {
-                mostrarAlerta("La contraseña debe tener un mínimo de 4 caracteres.", "error");
-            } else {
-                alert("La contraseña debe tener un mínimo de 4 caracteres.");
-            }
+        if (!formElement) {
+            console.error("❌ ERROR: No se encontró el formulario en la pantalla.");
             return;
         }
 
-        // Enviamos EXACTAMENTE lo que tu backend está pidiendo (ni más, ni menos)
-        const data = {
-            nombre: nombreValor,
-            apellido: apellidoValor,
-            correo: emailValor,
-            telefono: telefonoValor,
-            password: passValor
-        };
-        
-        try {
-            const res = await fetch(`${API_URL}/auth/registro`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+        formElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log("✅ 1. Botón presionado. Leyendo datos...");
             
-            const resultado = await res.json();
-            console.log("Respuesta del servidor al registrar:", resultado); 
-            
-            if (res.ok) {
-                if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.", "exito");
-                else alert("¡Cuenta creada exitosamente!");
-                
-                cambiarVista('login'); 
-            } else {
-                if (typeof mostrarAlerta === 'function') mostrarAlerta(resultado.error || "Ocurrió un error al crear la cuenta.", "error");
-                else alert(resultado.error || "Error al crear la cuenta");
+            const nombreValor = document.getElementById('reg-nombre').value.trim();
+            const apellidoValor = document.getElementById('reg-apellido').value.trim();
+            const emailValor = document.getElementById('reg-email').value.trim();
+            const telefonoValor = document.getElementById('reg-telefono').value.trim();
+            const passValor = document.getElementById('reg-pass').value;
+
+            if (passValor.length < 4) {
+                alert("La contraseña debe tener un mínimo de 4 caracteres.");
+                return;
             }
-        } catch (err) {
-            console.error("Error crítico en registro:", err);
-            if (typeof mostrarAlerta === 'function') mostrarAlerta("No se pudo conectar con el servidor.", "error");
-            else alert("No se pudo conectar con el servidor. Revisa tu internet o la URL de la API.");
-        }
-    });
+
+            const data = {
+                nombre: nombreValor,
+                apellido: apellidoValor,
+                correo: emailValor,
+                telefono: telefonoValor,
+                password: passValor
+            };
+            
+            console.log("✅ 2. Datos recopilados:", data);
+
+            try {
+                console.log("✅ 3. Enviando datos a Render...");
+                // Hemos puesto tu URL directa para evitar errores de variables no definidas
+                const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultado = await res.json();
+                console.log("✅ 4. Respuesta de Render:", resultado); 
+                
+                if (res.ok) {
+                    alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+                    cambiarVista('login'); 
+                } else {
+                    alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
+                }
+            } catch (err) {
+                console.error("❌ 5. Fallo al conectar con el servidor:", err);
+                alert("No se pudo conectar con el servidor. Revisa tu internet.");
+            }
+        });
+    }, 100);
 }
 async function procesarLogin(e) {
     e.preventDefault();
