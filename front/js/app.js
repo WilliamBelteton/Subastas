@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
     
     if (!fotosStr) {
         return 'https://via.placeholder.com/600x400?text=Sin+Imagen';

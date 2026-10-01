@@ -2,7 +2,7 @@
 // 1. FUNCIÓN GLOBAL DE FOTOS (La versión definitiva, siempre hasta arriba)
 // =========================================================================
 function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
     
     if (!fotosStr) return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
 
@@ -184,7 +184,7 @@ function cambiarFotoPrincipal(url) {
 // CONEXIÓN A SOCKET.IO
 var socket; 
 if (typeof io !== 'undefined') {
-    const socket = io('https://subastas-qja9.onrender.com');
+    const socket = io('https://subastas-7d8i.onrender.com');
     window.socket = socket; 
 
     socket.on('actualizacion_puja', (data) => {
