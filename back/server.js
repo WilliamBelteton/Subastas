@@ -218,26 +218,22 @@ socket.on('nueva_puja', async (data) => {
     const { vehiculoId, usuarioId, monto } = data;
 
     try {
-        // 1. Consultar el vehículo actual usando la columna 'monto'
         const [rows] = await pool.query('SELECT precio_base, monto FROM vehiculos WHERE id = ?', [vehiculoId]);
         if (rows.length === 0) return;
 
         const vehiculo = rows[0];
         const montoMinimoRequerido = vehiculo.monto ? vehiculo.monto : vehiculo.precio_base;
 
-        // 2. Validar que la nueva oferta sea estrictamente mayor
         if (monto <= montoMinimoRequerido) {
             socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(montoMinimoRequerido).toLocaleString()}`);
             return;
         }
 
-        // 3. GUARDAR EN LA BASE DE DATOS usando 'monto' y 'usuario_id'
         await pool.query(
             'UPDATE vehiculos SET monto = ?, usuario_id = ? WHERE id = ?',
             [monto, usuarioId, vehiculoId]
         );
 
-        // 4. Emitir a todos los clientes conectados en la sala del vehículo
         io.to(vehiculoId).emit('actualizacion_puja', {
             nuevaPuja: monto,
             usuarioGanadorId: usuarioId
