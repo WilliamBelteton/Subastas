@@ -199,6 +199,9 @@ if (typeof io !== 'undefined') {
                 badge.style.background = '#d4edda';
                 badge.style.color = '#155724';
                 badge.innerText = "¡Vas ganando esta subasta!";
+                
+                // AQUÍ ES DONDE VA EL ÉXITO REAL:
+                if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Oferta guardada exitosamente en la base de datos!", 'exito');
             } else {
                 badge.style.background = '#f8d7da';
                 badge.style.color = '#721c24';
@@ -233,8 +236,7 @@ function realizarPuja(vehiculoId, precioBase) {
         return;
     }
 
-    if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Su oferta ha sido registrada!", 'exito');
-
+    // Ya NO mostramos éxito aquí. Solo emitimos al servidor en silencio.
     if (window.socket) {
         window.socket.emit('nueva_puja', {
             vehiculoId: vehiculoId,
