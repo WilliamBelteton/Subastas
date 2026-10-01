@@ -48,7 +48,7 @@ async function renderizarInventario(container) {
         }
 
         // Función interna para pintar las tarjetas en pantalla
-        function pintarTarjetas(lista) {
+       function pintarTarjetas(lista) {
             if (lista.length === 0) {
                 grid.innerHTML = '<p style="grid-column: 1 / -1; color: #666; text-align: center; padding: 20px;">No se encontraron vehículos con los filtros seleccionados.</p>';
                 return;
@@ -57,7 +57,7 @@ async function renderizarInventario(container) {
             const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
             grid.innerHTML = lista.map(v => {
-                // Procesamiento correcto de la foto usando la variable 'v' del bucle
+                // CORRECCIÓN: Usamos 'v' en lugar de 'vehiculo'
                 const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
                 const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
@@ -88,7 +88,6 @@ async function renderizarInventario(container) {
                 `;
             }).join('');
         }
-
         // Pintar inicialmente todos los vehículos
         pintarTarjetas(vehiculosOriginales);
 
