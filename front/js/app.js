@@ -26,11 +26,10 @@ function actualizarMenu() {
     const user = obtenerUsuarioActual();
     const nav = document.getElementById('nav-auth');
 
-    if (!nav) return; // Si no encuentra el menú, se detiene para evitar errores
+    if (!nav) return;
 
     try {
         if (user) {
-            // MENÚ PARA USUARIO CON SESIÓN INICIADA
             nav.innerHTML = `
                 <a href="#" onclick="cambiarVista('inventario'); return false;" style="text-decoration: none; color: #333; font-weight: bold; margin-right: 15px;">Inventario</a>
                 <a href="#" onclick="cambiarVista('publicar'); return false;" style="text-decoration: none; color: #333; font-weight: bold; margin-right: 15px;">Publicar Vehículo</a>
@@ -39,7 +38,6 @@ function actualizarMenu() {
                 <a href="#" onclick="cerrarSesion(); return false;" style="color: #dc3545; font-weight: bold; text-decoration: none;">Salir</a>
             `;
         } else {
-            // MENÚ PARA VISITANTE (SIN SESIÓN)
             nav.innerHTML = `
                 <a href="#" onclick="cambiarVista('inventario'); return false;" style="text-decoration: none; color: #333; font-weight: bold; margin-right: 15px;">Inventario</a>
                 <button onclick="cambiarVista('login')" style="background: #0056b3; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Iniciar Sesión</button>
@@ -49,7 +47,7 @@ function actualizarMenu() {
         console.warn("Aviso visual ignorado al cambiar el menú:", error.message);
     }
 }
-// Pegar esto en app.js, justo arriba de function cambiarVista(...)
+
 function renderizarVistaRegistro(container) {
     container.innerHTML = `
         <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -80,7 +78,6 @@ function renderizarVistaRegistro(container) {
                 <button type="submit" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Registrarse</button>
             </form>
             <div style="text-align: center; margin-top: 20px;">
-                <!-- event.preventDefault() aquí evita que la página parpadee al volver al login -->
                 <a href="#" onclick="event.preventDefault(); cambiarVista('login');" style="color: #0056b3; font-weight: bold; text-decoration: none;">¿Ya tienes cuenta? Inicia sesión aquí</a>
             </div>
         </div>
@@ -106,7 +103,7 @@ function renderizarVistaRegistro(container) {
             }
 
             try {
-                const res = await fetch('https://subastas-7d8i.onrender.com/api/auth/registro', {
+                const res = await fetch(`${API_URL}/api/auth/registro`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -126,8 +123,9 @@ function renderizarVistaRegistro(container) {
         });
     }, 100);
 }
+
 // =========================================================
-// SISTEMA DE ENRUTAMIENTO PRINCIPAL (Con Historial del Navegador)
+// SISTEMA DE ENRUTAMIENTO PRINCIPAL
 // =========================================================
 function cambiarVista(vista, param = null, registrarHistorial = true) {
     const container = document.getElementById('main-container');
@@ -136,7 +134,6 @@ function cambiarVista(vista, param = null, registrarHistorial = true) {
     container.innerHTML = ''; 
     actualizarMenu(); 
 
-    // Guardamos la navegación en el historial de Chrome si viene de un clic del usuario
     if (registrarHistorial) {
         const estado = { vista, param };
         history.pushState(estado, "", `#${vista}${param ? '-' + param : ''}`);
@@ -182,15 +179,9 @@ function cambiarVista(vista, param = null, registrarHistorial = true) {
             case 'registro':
                 if (typeof renderizarVistaRegistro === 'function') {
                     renderizarVistaRegistro(container);
-                } else {
-                    container.innerHTML = `
-                        <div style="text-align:center; padding: 40px; color: red;">
-                            <h2>❌ Error de conexión de archivos</h2>
-                            <p>El navegador no encuentra la función <b>renderizarVistaRegistro</b>.</p>
-                            <p>Asegúrate de tener la etiqueta <code>&lt;script src="..."&gt;</code> en tu <b>index.html</b>.</p>
-                        </div>`;
                 }
                 break;
+
             default:
                 container.innerHTML = '<h2>Página no encontrada</h2>';
                 break;
@@ -200,12 +191,8 @@ function cambiarVista(vista, param = null, registrarHistorial = true) {
     }
 }
 
-// =========================================================
-// ESCUCHADOR DE LAS FLECHAS ATRÁS / ADELANTE DEL NAVEGADOR
-// =========================================================
 window.addEventListener('popstate', (event) => {
     if (event.state && event.state.vista) {
-        // Cargamos la vista anterior sin volver a empujar el historial
         cambiarVista(event.state.vista, event.state.param, false);
     } else {
         cambiarVista('home', null, false);
@@ -214,9 +201,6 @@ window.addEventListener('popstate', (event) => {
 
 // =========================================================
 // SISTEMA DE ALERTAS AMIGABLES
-// =========================================================
-// =========================================================
-// SISTEMA DE ALERTAS AMIGABLES (Corregido)
 // =========================================================
 function mostrarAlerta(mensaje, tipo = 'exito') {
     let textoFinal = mensaje;
@@ -237,16 +221,16 @@ function mostrarAlerta(mensaje, tipo = 'exito') {
     document.body.appendChild(alerta);
 
     setTimeout(() => {
-        if (alerta) alerta.remove(); // <-- Corregido: 'alerta' en lugar de 'alarta'
+        if (alerta) alerta.remove();
     }, 4500);
 }
+
 // =========================================================
 // INICIALIZACIÓN AL CARGAR LA PÁGINA
 // =========================================================
 document.addEventListener('DOMContentLoaded', () => {
     actualizarMenu();
 
-    // Verificamos si la página cargó con un hash (por ejemplo, si recargaste en /#mis-publicaciones)
     const hash = window.location.hash.replace('#', '');
     if (hash) {
         if (hash.startsWith('detalle-subasta')) {
@@ -260,16 +244,14 @@ document.addEventListener('DOMContentLoaded', () => {
         cambiarVista('home', null, false);
     }
 });
+
 function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
-    
     if (!fotosStr) {
         return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
     }
 
     let primeraFoto = "";
 
-    // Si la base de datos guarda las fotos como un arreglo JSON (ej: ["/uploads/img.jpg"])
     if (typeof fotosStr === 'string' && fotosStr.trim().startsWith('[')) {
         try {
             const parsed = JSON.parse(fotosStr);
@@ -280,7 +262,6 @@ function obtenerUrlFoto(fotosStr) {
             primeraFoto = fotosStr;
         }
     } else if (typeof fotosStr === 'string') {
-        // Si viene separada por comas
         primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
     } else {
         primeraFoto = String(fotosStr);
@@ -290,12 +271,10 @@ function obtenerUrlFoto(fotosStr) {
         return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
     }
 
-    // Si ya es una URL web completa
     if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
         return primeraFoto;
     }
 
-    // Unir limpiamente con el backend de Render
     const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
-    return `${URL_BACKEND}${rutaLimpia}`;
+    return `${API_URL}${rutaLimpia}`;
 }
