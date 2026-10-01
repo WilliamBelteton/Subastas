@@ -21,17 +21,11 @@ function renderizarLogin(container) {
 
 // =========================================================
 // VISTA: INICIAR SESIÓN
-// =========================================================
-
-// =========================================================
-// VISTA: REGISTRO DE USUARIO NUEVO
-// =========================================================
-// =========================================================
-// VISTA: INICIAR SESIÓN
+//
 // =========================================================
 function renderizarVistaLogin(container) {
     container.innerHTML = `
-        <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Iniciar Sesión</h2>
             <form id="form-login">
                 <div style="margin-bottom: 15px;">
@@ -45,53 +39,64 @@ function renderizarVistaLogin(container) {
                 <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Ingresar</button>
             </form>
             <div style="text-align: center; margin-top: 20px;">
-                <a href="#" onclick="cambiarVista('registro')" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿No tienes cuenta? Regístrate aquí</a>
+                <!-- 🔥 AQUÍ ESTÁ LA MAGIA: event.preventDefault() evita que la página parpadee o se trabe -->
+                <a href="#" onclick="event.preventDefault(); cambiarVista('registro');" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿No tienes cuenta? Regístrate aquí</a>
             </div>
         </div>
     `;
 
-    document.getElementById('form-login').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Extraemos los valores directamente
-        const emailValor = document.getElementById('login-email').value;
-        const passValor = document.getElementById('login-pass').value;
-        
-        // Enviamos los datos en español e inglés para asegurar compatibilidad con tu Backend
-        const data = {
-            correo: emailValor,
-            contrasena: passValor,
-            email: emailValor,
-            password: passValor
-        };
-        
-        try {
-            const res = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            const resultado = await res.json();
-            
-            if (res.ok) {
-                localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
-                if (resultado.token) {
-                    localStorage.setItem('token', resultado.token);
-                }
-                
-                mostrarAlerta("¡Bienvenido de nuevo!", "exito");
-                cambiarVista('home'); 
-            } else {
-                mostrarAlerta(resultado.error || resultado.mensaje || "Credenciales incorrectas.", "error");
-            }
-        } catch (err) {
-            console.error("Error en login:", err);
-            mostrarAlerta("No se pudo conectar con el servidor.", "error");
-        }
-    });
-}
+    // Usamos el buscador dentro del contenedor para mayor seguridad, igual que en el registro
+    setTimeout(() => {
+        const formElement = container.querySelector('#form-login');
+        if (!formElement) return;
 
+        formElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Si no tienes API_URL definida globalmente, usa tu enlace directo:
+            const URL_BACKEND = typeof API_URL !== 'undefined' ? API_URL : 'https://subastas-qja9.onrender.com/api';
+            
+            const emailValor = container.querySelector('#login-email').value.trim();
+            const passValor = container.querySelector('#login-pass').value;
+            
+            const data = {
+                correo: emailValor,
+                contrasena: passValor,
+                email: emailValor,
+                password: passValor
+            };
+            
+            try {
+                const res = await fetch(`${URL_BACKEND}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultado = await res.json();
+                
+                if (res.ok) {
+                    localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
+                    if (resultado.token) {
+                        localStorage.setItem('token', resultado.token);
+                    }
+                    
+                    if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Bienvenido de nuevo!", "exito");
+                    else alert("¡Bienvenido!");
+                    
+                    cambiarVista('home'); 
+                } else {
+                    if (typeof mostrarAlerta === 'function') mostrarAlerta(resultado.error || "Credenciales incorrectas.", "error");
+                    else alert(resultado.error || "Credenciales incorrectas");
+                }
+            } catch (err) {
+                console.error("Error en login:", err);
+                if (typeof mostrarAlerta === 'function') mostrarAlerta("No se pudo conectar con el servidor.", "error");
+                else alert("Error de conexión");
+            }
+        });
+    }, 100);
+}
 // =========================================================
 // VISTA: REGISTRO DE USUARIO NUEVO
 // =========================================================
