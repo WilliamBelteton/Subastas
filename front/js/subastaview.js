@@ -1,3 +1,25 @@
+// Función global de apoyo para limpiar y formatear las rutas de las fotos
+function obtenerUrlFoto(fotosStr) {
+    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    
+    if (!fotosStr || typeof fotosStr !== 'string' || fotosStr.trim() === "") {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    let primeraFoto = fotosStr.split(',')[0].trim().replace(/['"]+/g, '');
+
+    if (!primeraFoto) {
+        return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
+    }
+
+    if (primeraFoto.startsWith('http://') || primeraFoto.startsWith('https://')) {
+        return primeraFoto;
+    }
+
+    const rutaLimpia = primeraFoto.startsWith('/') ? primeraFoto : `/${primeraFoto}`;
+    return `${URL_BACKEND}${rutaLimpia}`;
+}
+
 // 1. ESTA FUNCIÓN AHORA SOLO DIBUJA EL HTML (Sin lógica adentro)
 async function renderizarVistaSubasta(container, vehiculoId) {
     if (!container) return;
