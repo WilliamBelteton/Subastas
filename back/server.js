@@ -209,10 +209,11 @@ app.put('/api/vehiculos/:id', async (req, res) => {
 // Ruta corregida a async/await para vehículos por usuario
 app.get('/api/vehiculos', async (req, res) => {
     try {
-        // Obtenemos los vehículos sumando la puja más alta y el ID del ganador actual
         const query = `
-            SELECT v.*, 
-                   (SELECT MAX(monto) FROM pujas WHERE vehiculo_id = v.id) AS monto,
+            SELECT v.id, v.usuario_id, v.anio, v.tipo_articulo, v.marca, v.modelo, v.motor, 
+                   v.transmision, v.combustible, v.tren_manejo, v.cilindros, v.estado_dano, 
+                   v.fotos, v.precio_base, v.fecha_inicio, v.fecha_cierre,
+                   COALESCE((SELECT MAX(monto) FROM pujas WHERE vehiculo_id = v.id), v.precio_base) AS monto,
                    (SELECT usuario_id FROM pujas WHERE vehiculo_id = v.id ORDER BY monto DESC LIMIT 1) AS ganador_id
             FROM vehiculos v
         `;
