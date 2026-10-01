@@ -234,37 +234,33 @@ io.on('connection', (socket) => {
         socket.join(`vehiculo_${vehiculoId}`);
     });
 
-    socket.on('nueva_puja', async (data) => {
+   socket.on('nueva_puja', async (data) => {
         const { vehiculoId, usuarioId, monto } = data;
 
         try {
-            // 1. Obtener precio base
             const [vehiculoRows] = await db.execute('SELECT precio_base FROM vehiculos WHERE id = ?', [vehiculoId]);
             if (vehiculoRows.length === 0) return socket.emit('error_puja', 'Vehículo no encontrado');
             
             const precioBase = vehiculoRows[0].precio_base;
 
-            // 2. Obtener la puja máxima histórica de ese vehículo
             const [pujasRows] = await db.execute('SELECT MAX(monto) as max_monto FROM pujas WHERE vehiculo_id = ?', [vehiculoId]);
             const pujaActual = pujasRows[0].max_monto ? pujasRows[0].max_monto : precioBase;
 
-            // 3. VALIDACIÓN ESTRICTA: Si la puja es menor o igual, la rebotamos
             if (monto <= pujaActual) {
                 return socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(pujaActual).toLocaleString()}`);
             }
 
-            // 4. Si es válida, insertamos la puja
             const insertQuery = 'INSERT INTO pujas (vehiculo_id, usuario_id, monto) VALUES (?, ?, ?)';
             await db.execute(insertQuery, [vehiculoId, usuarioId, monto]);
             
-            // 5. Emitir actualización a todos los conectados
             io.to(`vehiculo_${vehiculoId}`).emit('actualizacion_puja', {
                 nuevaPuja: monto,
                 usuarioGanadorId: usuarioId 
             });
 
         } catch (error) {
-            console.error("-> ERROR GUARDANDO PUJA:", error.message);
+            // ESTO ES LO QUE NECESITAMOS VER:
+            console.error("-> ❌ ERROR CRÍTICO AL INSERTAR PUJA:", error.message);
             socket.emit('error_puja', 'Error interno al procesar la puja.');
         }
     });
