@@ -4,6 +4,17 @@
 const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
 const API_URL = `${URL_BACKEND}/api`;
 
+function extraerMensajeLimpiado(data) {
+    if (!data) return "Ocurrió un error inesperado.";
+    if (typeof data === 'string') {
+        try {
+            const parseado = JSON.parse(data);
+            return parseado.error || parseado.mensaje || parseado.message || "Error en la operación";
+        } catch (e) { return data; }
+    }
+    if (typeof data === 'object') return data.error || data.mensaje || data.message || "Ocurrió un problema.";
+    return String(data);
+}
 // =========================================================================
 // 1. FUNCIÓN GLOBAL DE FOTOS
 // =========================================================================
@@ -146,8 +157,10 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 }
 
 // =========================================================================
+// =========================================================================
 // 3. REGISTRO Y FUNCIONES GLOBALES
 // =========================================================================
+// ---> REEMPLAZA TU EVENT LISTENER ACTUAL POR ESTE <---
 document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'form-registro') {
         e.preventDefault();
@@ -172,13 +185,19 @@ document.addEventListener('submit', async (e) => {
                 body: JSON.stringify(data)
             });
 
-            const resultado = await res.json();
+            let resultado;
+            try { resultado = await res.json(); } catch(err) { resultado = "Error de conexión con el servidor."; }
+
+            const mensajeFinal = extraerMensajeLimpiado(resultado);
 
             if (res.ok) {
-                alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+                if (typeof mostrarAlerta === 'function') mostrarAlerta(mensajeFinal || "¡Cuenta creada exitosamente!", 'exito');
+                else alert(mensajeFinal || "¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+                
                 if (typeof cambiarVista === 'function') cambiarVista('login');
             } else {
-                alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
+                if (typeof mostrarAlerta === 'function') mostrarAlerta("Error: " + mensajeFinal, 'error');
+                else alert("Error: " + mensajeFinal);
             }
         } catch (err) {
             alert("No se pudo conectar con el servidor. Revisa tu internet.");
@@ -219,9 +238,13 @@ if (typeof io !== 'undefined') {
         }
     });
 
-    socket.on('error_puja', (mensaje) => {
-        if (typeof mostrarAlerta === 'function') mostrarAlerta(mensaje, 'error');
-        else alert(mensaje);
+   socket.on('error_puja', (data) => {
+        const textoLimpio = extraerMensajeLimpiado(data);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(textoLimpio, 'error');
+        } else {
+            alert(textoLimpio);
+        }
     });
 }
 
