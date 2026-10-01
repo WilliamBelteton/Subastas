@@ -218,22 +218,26 @@ socket.on('nueva_puja', async (data) => {
     const { vehiculoId, usuarioId, monto } = data;
 
     try {
-        const [rows] = await pool.query('SELECT precio_base, monto FROM vehiculos WHERE id = ?', [vehiculoId]);
+        // 1. Consultar el vehículo actual para validar el precio base o puja máxima anterior
+        const [rows] = await db.query('SELECT precio_base, puja_maxima FROM vehiculos WHERE id = ?', [vehiculoId]);
         if (rows.length === 0) return;
 
         const vehiculo = rows[0];
-        const montoMinimoRequerido = vehiculo.monto ? vehiculo.monto : vehiculo.precio_base;
+        const montoMinimoRequerido = vehiculo.puja_maxima ? vehiculo.puja_maxima : vehiculo.precio_base;
 
+        // 2. Validar que la nueva oferta sea estrictamente mayor
         if (monto <= montoMinimoRequerido) {
             socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(montoMinimoRequerido).toLocaleString()}`);
             return;
         }
 
-        await pool.query(
-            'UPDATE vehiculos SET monto = ?, usuario_id = ? WHERE id = ?',
+        // 3. GUARDAR EN LA BASE DE DATOS (Esto soluciona que se pierda al recargar)
+        await db.query(
+            'UPDATE vehiculos SET puja_maxima = ?, ganador_id = ? WHERE id = ?',
             [monto, usuarioId, vehiculoId]
         );
 
+        // 4. Emitir a todos los clientes conectados en la sala del vehículo
         io.to(vehiculoId).emit('actualizacion_puja', {
             nuevaPuja: monto,
             usuarioGanadorId: usuarioId
@@ -244,6 +248,7 @@ socket.on('nueva_puja', async (data) => {
         socket.emit('error_puja', "Hubo un error al registrar tu oferta en el servidor.");
     }
 });
+
 });
 
 const PORT = process.env.PORT || 4000;

@@ -13,19 +13,11 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         }
 
 // 1. Proteger y arreglar las rutas de las fotos...
-       // Asegúrate de usar esta lógica para formatear las fotos de forma segura
-const URL_BACKEND = 'https://subastas-qja9.onrender.com';
-const fotosString = vehiculo.fotos || "";
-let fotos = fotosString ? fotosString.split(',') : [];
+        const fotosString = vehiculo.fotos || "";
+        let fotos = fotosString ? fotosString.split(',') : [];
+        if (fotos.length === 0) fotos.push('https://via.placeholder.com/600x400?text=Sin+Imagen');
+        fotos = fotos.map(f => f.startsWith('/uploads/') ? `https://subastas-qja9.onrender.com${f}` : f);
 
-if (fotos.length === 0 || fotos[0].trim() === "") {
-    fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
-} else {
-    fotos = fotos.map(f => {
-        let rutaLimpia = f.trim();
-        return rutaLimpia.startsWith('http') ? rutaLimpia : `${URL_BACKEND}${rutaLimpia}`;
-    });
-}
         // =========================================================
         // AQUÍ ESTÁ LA MAGIA: LEER LA PUJA MÁXIMA DE LA BD
         // =========================================================
@@ -143,7 +135,7 @@ if (typeof io !== 'undefined') {
     });
 }
 
-function realizarPuja(vehiculoId, precioBaseLote) {
+function realizarPuja(vehiculoId, precioBase) {
     const user = obtenerUsuarioActual();
     if (!user) {
         alert("Debe iniciar sesión para ofertar.");
@@ -151,53 +143,37 @@ function realizarPuja(vehiculoId, precioBaseLote) {
         return;
     }
 
-    const inputOferta = document.getElementById('input-nueva-oferta');
-    if (!inputOferta) return;
-    
-    const montoOfrecido = parseFloat(inputOferta.value);
-    
-    const textoActual = document.getElementById('monto-actual').innerText;
-    const montoActual = parseFloat(textoActual.replace('Q.', '').replace(/,/g, '').trim()) || precioBaseLote;
+    const montoOfrecido = parseFloat(document.getElementById('input-nueva-oferta').value);
+    const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
+    const montoActual = parseFloat(montoActualTexto);
 
     if (isNaN(montoOfrecido) || montoOfrecido <= montoActual) {
-        if (typeof mostrarAlerta === 'function') {
-            mostrarAlerta(`La oferta debe ser estrictamente mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
-        } else {
-            alert(`La oferta debe ser mayor a Q. ${montoActual.toLocaleString()}`);
-        }
+        mostrarAlerta(`La oferta debe ser mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
         return;
     }
 
-    // Usamos el socket global de forma segura
-    const socketActivo = window.socket || (typeof socket !== 'undefined' ? socket : null);
+    // Alerta de éxito al ofertar
+    mostrarAlerta("¡Su oferta ha sido registrada y enviada con éxito!", 'exito');
+
     
-    if (!socketActivo) {
-        alert("Error de conexión en tiempo real con el servidor.");
-        return;
-    }
-
-    socketActivo.emit('nueva_puja', {
+    // Emitir por Socket.io (Tiempo real instantáneo)
+    socket.emit('nueva_puja', {
         vehiculoId: vehiculoId,
         usuarioId: user.id,
         monto: montoOfrecido
     });
-
-    inputOferta.value = '';
 }
 
 function iniciarCuentaRegresiva(fechaCierreStr, elementoId = 'temporizador-reloj') {
     const elemento = document.getElementById(elementoId);
     if (!elemento) return;
 
-    if (!fechaCierreStr) {
-        elemento.innerHTML = "Fecha no disponible";
-        return;
+    // Limpiamos la fecha para separar fecha y hora de forma segura (ej: "2026-09-30T19:50")
+    let fechaLimpia = fechaCierreStr;
+    if (fechaLimpia.includes(' ')) {
+        fechaLimpia = fechaLimpia.replace(' ', 'T');
     }
 
-    // Limpiamos y formateamos la fecha de la base de datos de forma segura
-    let fechaLimpia = fechaCierreStr.replace(' ', 'T');
-    
-    // Si la fecha no incluye una zona horaria, le agregamos 'Z' o aseguramos su lectura local
     const fechaCierre = new Date(fechaLimpia).getTime();
 
     const intervalo = setInterval(() => {
