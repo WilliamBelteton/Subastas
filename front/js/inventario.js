@@ -57,7 +57,7 @@ async function renderizarInventario(container) {
             const URL_BACKEND = 'https://subastas-qja9.onrender.com';
 
             grid.innerHTML = lista.map(v => {
-                // Procesamiento correcto de la foto usando la variable 'v' del bucle
+                // CORRECCIÓN: Usamos 'v' en lugar de 'vehiculo'
                 const fotoRuta = v.fotos ? v.fotos.split(',')[0] : '';
                 const fotoPortada = fotoRuta.startsWith('http') ? fotoRuta : `${URL_BACKEND}${fotoRuta}`;
 
@@ -128,17 +128,6 @@ async function renderizarInventario(container) {
     }
 }
 
-async function cargarVehiculosDesdeAPI() {
-    try {
-        const res = await fetch(`${API_URL}/vehiculos`);
-        const todosLosVehiculos = await res.json();
-        mostrarVehiculosEnGrid(todosLosVehiculos);
-    } catch (err) {
-        console.error(err);
-        const grid = document.getElementById('lista-vehiculos-grid');
-        if (grid) grid.innerHTML = '<p>Error al conectar con la base de datos MySQL.</p>';
-    }
-}
 
 function mostrarVehiculosEnGrid(vehiculos) {
     const grid = document.getElementById('lista-vehiculos-grid');
