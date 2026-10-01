@@ -1,93 +1,101 @@
-async function renderizarVistaSubasta(container, vehiculoId) {
-    container.innerHTML = `<p>Cargando sala de subasta en tiempo real...</p>`;
+function renderizarVistaRegistro(container) {
+    container.innerHTML = `
+        <div style="max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="text-align: center; color: #0056b3; margin-bottom: 20px;">Registro de Usuario</h2>
+            <form id="form-registro">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Nombre:</label>
+                        <input type="text" id="reg-nombre" required placeholder="Ej. William" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Apellido:</label>
+                        <input type="text" id="reg-apellido" required placeholder="Ej. Beltetón" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                </div>
 
-    try {
-        // Agregamos un timestamp dinámico para que el navegador NUNCA use caché viejo
-        const res = await fetch(`${API_URL}/vehiculos?nocache=${new Date().getTime()}`, { cache: 'no-store' });
-        const vehiculos = await res.json();
-        const vehiculo = vehiculos.find(v => v.id == vehiculoId);
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Correo Electrónico:</label>
+                    <input type="email" id="reg-email" required placeholder="tu@correo.com" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                </div>
 
-        if (!vehiculo) {
-            container.innerHTML = '<p>Vehículo no encontrado.</p>';
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Teléfono:</label>
+                    <input type="tel" id="reg-telefono" required placeholder="Ej. 5555-5555" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Contraseña:</label>
+                    <input type="password" id="reg-pass" required placeholder="Mínimo 4 caracteres" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <button type="submit" style="width: 100%; padding: 12px; font-size: 1rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Registrarse</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="#" onclick="cambiarVista('login')" style="color: #0056b3; text-decoration: none; font-weight: bold;">¿Ya tienes cuenta? Inicia sesión aquí</a>
+            </div>
+        </div>
+    `;
+
+    // Usamos un ligero retraso para asegurar que el HTML anterior ya está 100% dibujado
+    setTimeout(() => {
+        const formElement = document.getElementById('form-registro');
+        
+        if (!formElement) {
+            console.error("❌ ERROR: No se encontró el formulario en la pantalla.");
             return;
         }
 
-// 1. Proteger y arreglar las rutas de las fotos...
-        const fotosString = vehiculo.fotos || "";
-        let fotos = fotosString ? fotosString.split(',') : [];
-        if (fotos.length === 0) fotos.push('https://via.placeholder.com/600x400?text=Sin+Imagen');
-        fotos = fotos.map(f => f.startsWith('/uploads/') ? `https://subastas-qja9.onrender.com${f}` : f);
+        formElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log("✅ 1. Botón presionado. Leyendo datos...");
+            
+            const nombreValor = document.getElementById('reg-nombre').value.trim();
+            const apellidoValor = document.getElementById('reg-apellido').value.trim();
+            const emailValor = document.getElementById('reg-email').value.trim();
+            const telefonoValor = document.getElementById('reg-telefono').value.trim();
+            const passValor = document.getElementById('reg-pass').value;
 
-        // =========================================================
-        // AQUÍ ESTÁ LA MAGIA: LEER LA PUJA MÁXIMA DE LA BD
-        // =========================================================
-        // Si hay una puja máxima guardada la usamos, si no, usamos el precio base
-        const montoInicial = vehiculo.puja_maxima ? vehiculo.puja_maxima : vehiculo.precio_base;
-        const precioFormateado = Number(montoInicial).toLocaleString();
-        const precioBaseLote = Number(vehiculo.precio_base).toLocaleString();
-
-        // 2. Verificar quién va ganando al cargar la página
-        const user = obtenerUsuarioActual();
-        let badgeStyle = 'background: #e2e3e5; color: #383d41;';
-        let badgeText = 'Esperando ofertas... ¡Sé el primero!';
-
-        if (vehiculo.ganador_id) {
-            if (user && vehiculo.ganador_id == user.id) {
-                badgeStyle = 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
-                badgeText = '¡Vas ganando esta subasta!';
-            } else {
-                badgeStyle = 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;';
-                badgeText = 'Alguien más va ganando. ¡Haz tu oferta ahora!';
+            if (passValor.length < 4) {
+                alert("La contraseña debe tener un mínimo de 4 caracteres.");
+                return;
             }
-        }
-        container.innerHTML = `
-            <div style="background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                <!-- Columna Izquierda: Galería -->
-                <div>
-                    <img id="imagen-principal-carrusel" src="${fotos[0]}" style="width: 100%; height: 320px; object-fit: cover; border-radius: 6px;">
-                    <div style="display: flex; gap: 10px; margin-top: 10px; overflow-x: auto;">
-                        ${fotos.map(f => `<img src="${f}" onclick="cambiarFotoPrincipal('${f}')" style="width: 70px; height: 50px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid var(--border-color);">`).join('')}
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <h3>Ficha Técnica</h3>
-                        <p><strong>Año / Marca / Modelo:</strong> ${vehiculo.anio || ''} ${vehiculo.marca || ''} ${vehiculo.modelo || ''}</p>
-                        <p><strong>Motor / Transmisión:</strong> ${vehiculo.motor || 'N/A'} | ${vehiculo.transmision || 'N/A'}</p>
-                        <p><strong>Combustible / Tracción:</strong> ${vehiculo.combustible || 'N/A'} | ${vehiculo.tren_manejo || 'N/A'}</p>
-                        <p><strong>Estado de Daño:</strong> <span class="badge-dano dano-${vehiculo.estado_dano || 'Verde'}">${vehiculo.estado_dano || 'No especificado'}</span></p>
-                    </div>
-                </div>
 
-                <!-- Columna Derecha: Motor de Subasta -->
-                <div style="background: var(--bg-main); padding: 20px; border-radius: 6px; border: 1px solid var(--border-color);">
-                    <h2>Sala de Pujas en Tiempo Real</h2>
-                    
-                    <!-- Estado de la Puja al Cargar -->
-                    <div id="badge-estado-puja" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; ${badgeStyle}">
-                        ${badgeText}
-                    </div>
-                    
-                    <p style="font-size: 0.9rem; color: var(--text-muted);">Precio Base Original: Q. ${precioBaseLote}</p>
-                    <h1 style="color: var(--primary); margin: 10px 0;">Puja Actual: <span id="monto-actual">Q. ${precioFormateado}</span></h1>
-                    
-                    <div style="margin: 20px 0;">
-                        <p><strong>Tiempo Restante:</strong> <span id="temporizador-reloj" style="font-size: 1.2rem; color: #dc3545; font-weight: bold;">Calculando...</span></p>
-                    </div>
+            const data = {
+                nombre: nombreValor,
+                apellido: apellidoValor,
+                correo: emailValor,
+                telefono: telefonoValor,
+                password: passValor
+            };
+            
+            console.log("✅ 2. Datos recopilados:", data);
 
-                    <div id="contenedor-oferta-acciones">
-                        <input type="number" id="input-nueva-oferta" placeholder="Monto de oferta (Q)" style="padding: 10px; width: 60%; margin-right: 5px;">
-                        <button class="btn-primary" onclick="realizarPuja(${vehiculo.id}, ${vehiculo.precio_base})">Ofertar</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
-        iniciarTemporizador(vehiculo.fecha_cierre);
-
-    } catch (err) {
-        console.error("Error al cargar la subasta:", err);
-        container.innerHTML = '<p>Ocurrió un error al cargar la vista de subasta.</p>';
-    }
+            try {
+                console.log("✅ 3. Enviando datos a Render...");
+                // Hemos puesto tu URL directa para evitar errores de variables no definidas
+                const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultado = await res.json();
+                console.log("✅ 4. Respuesta de Render:", resultado); 
+                
+                if (res.ok) {
+                    alert("¡Cuenta creada exitosamente! Ya puedes iniciar sesión.");
+                    cambiarVista('login'); 
+                } else {
+                    alert("Error: " + (resultado.error || resultado.mensaje || "Revisa tus datos."));
+                }
+            } catch (err) {
+                console.error("❌ 5. Fallo al conectar con el servidor:", err);
+                alert("No se pudo conectar con el servidor. Revisa tu internet.");
+            }
+        });
+    }, 100);
 }
 
 function cambiarFotoPrincipal(url) {
