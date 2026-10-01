@@ -117,16 +117,6 @@ app.post('/api/auth/login', async (req, res) => {
 // RUTAS DE VEHÍCULOS
 // =========================================================
 
-app.get('/api/vehiculos', async (req, res) => {
-    try {
-        const [vehiculos] = await db.query('SELECT * FROM vehiculos');
-        return res.status(200).json(vehiculos);
-    } catch (error) {
-        console.error("-> ERROR AL OBTENER VEHÍCULOS:", error.message);
-        return res.status(500).json({ error: 'Error al obtener el inventario' });
-    }
-});
-
 // Configuración de Multer para imágenes
 // =========================================================
 // CONFIGURACIÓN DE CLOUDINARY Y MULTER
@@ -239,33 +229,35 @@ io.on('connection', (socket) => {
         socket.join(`vehiculo_${vehiculoId}`);
     });
 
-   socket.on('nueva_puja', async (data) => {
+    socket.on('nueva_puja', async (data) => {
         const { vehiculoId, usuarioId, monto } = data;
 
         try {
             const [vehiculoRows] = await db.execute('SELECT precio_base FROM vehiculos WHERE id = ?', [vehiculoId]);
             if (vehiculoRows.length === 0) return socket.emit('error_puja', 'Vehículo no encontrado');
-            
+
             const precioBase = vehiculoRows[0].precio_base;
 
             const [pujasRows] = await db.execute('SELECT MAX(monto) as max_monto FROM pujas WHERE vehiculo_id = ?', [vehiculoId]);
-            const pujaActual = pujasRows[0].max_monto ? pujasRows[0].max_monto : precioBase;
+            const pujaActual = pujasRows[0].max_monto ? parseFloat(pujasRows[0].max_monto) : parseFloat(precioBase);
 
-            if (monto <= pujaActual) {
-                return socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(pujaActual).toLocaleString()}`);
+            // REGLA DEL 10%: Verificamos que el monto entrante sea suficiente
+            const minimoRequerido = pujaActual * 1.10;
+
+            if (monto < minimoRequerido) {
+                return socket.emit('error_puja', `La oferta debe ser mayor a Q. ${Number(minimoRequerido).toLocaleString()}`);
             }
 
             const insertQuery = 'INSERT INTO pujas (vehiculo_id, usuario_id, monto) VALUES (?, ?, ?)';
             await db.execute(insertQuery, [vehiculoId, usuarioId, monto]);
-            
+
             io.to(`vehiculo_${vehiculoId}`).emit('actualizacion_puja', {
                 nuevaPuja: monto,
-                usuarioGanadorId: usuarioId 
+                usuarioGanadorId: usuarioId
             });
 
         } catch (error) {
-            // ESTO ES LO QUE NECESITAMOS VER:
-            console.error("-> ❌ ERROR CRÍTICO AL INSERTAR PUJA:", error.message);
+            console.error('-> ❌ ERROR CRÍTICO AL INSERTAR PUJA:', error.message);
             socket.emit('error_puja', 'Error interno al procesar la puja.');
         }
     });

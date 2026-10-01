@@ -236,10 +236,16 @@ function realizarPuja(vehiculoId, precioBase) {
     const montoOfrecido = parseFloat(inputOferta.value);
     const montoActualTexto = document.getElementById('monto-actual').innerText.replace('Q. ', '').replace(/,/g, '');
     const montoActual = parseFloat(montoActualTexto);
+    
+    // REGLA DEL 10%: Calculamos el mínimo requerido
+    const minimoRequerido = montoActual * 1.10;
 
-    if (isNaN(montoOfrecido) || montoOfrecido <= montoActual) {
-        if (typeof mostrarAlerta === 'function') mostrarAlerta(`La oferta debe ser mayor a la puja actual (Q. ${montoActual.toLocaleString()}).`, 'error');
-        else alert(`La oferta debe ser mayor a la puja actual.`);
+    if (isNaN(montoOfrecido) || montoOfrecido < minimoRequerido) {
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta(`La oferta debe superar en un 10% a la actual. Mínimo: Q. ${minimoRequerido.toLocaleString()}`, 'error');
+        } else {
+            alert(`La oferta debe superar en un 10% a la actual. Mínimo: Q. ${minimoRequerido.toLocaleString()}`);
+        }
         return;
     }
 
@@ -272,7 +278,7 @@ function iniciarTemporizador(fechaCierreStr) {
             const inputAcciones = document.getElementById('contenedor-oferta-acciones');
             if (inputAcciones) inputAcciones.innerHTML = "<p style='color:red; font-weight:bold;'>El tiempo ha expirado. Ya no es posible ofertar.</p>";
             return;
-        }
+        }x  
 
         const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
