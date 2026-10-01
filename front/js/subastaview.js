@@ -38,7 +38,7 @@ async function renderizarVistaSubasta(container, vehiculoId) {
             return;
         }
 
-        // 2. Procesamiento seguro de las fotos para la vista de subasta
+       // 2. Procesamiento seguro de las fotos para la vista de subasta
         const fotosString = vehiculo.fotos || "";
         let fotos = [];
 
