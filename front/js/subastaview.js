@@ -1,9 +1,13 @@
 // =========================================================================
-// 1. FUNCIÓN GLOBAL DE FOTOS (La versión definitiva, siempre hasta arriba)
+// CONFIGURACIÓN GLOBAL DE URLS (Apunta a tu backend en Render)
+// =========================================================================
+const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
+const API_URL = `${URL_BACKEND}/api`;
+
+// =========================================================================
+// 1. FUNCIÓN GLOBAL DE FOTOS
 // =========================================================================
 function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
-    
     if (!fotosStr) return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
 
     let primeraFoto = "";
@@ -40,14 +44,15 @@ async function renderizarVistaSubasta(container, vehiculoId) {
         if (!res.ok) throw new Error("No se pudo conectar con el servidor");
         
         const vehiculos = await res.json();
-        const vehiculo = vehiculos.find(v => v.id == vehiculoId);
+        // Comparación estricta numérica para evitar fallos de tipo (string vs number)
+        const vehiculo = vehiculos.find(v => Number(v.id) === Number(vehiculoId));
 
         if (!vehiculo) {
             container.innerHTML = '<p style="padding: 20px; color: red;">Vehículo no encontrado.</p>';
             return;
         }
 
-        // Procesamiento ultra seguro de fotos para la galería
+        // Procesamiento seguro de fotos para la galería
         const fotosString = vehiculo.fotos;
         let fotos = [];
 
@@ -69,17 +74,17 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
         if (!fotos || fotos.length === 0) fotos = ['https://via.placeholder.com/600x400?text=Sin+Imagen'];
 
-        const montoActual = vehiculo.monto ? vehiculo.monto : vehiculo.precio_base;
+        // Se usa vehiculo.monto devuelto por el servidor (con COALESCE)
+        const montoActual = vehiculo.monto !== undefined && vehiculo.monto !== null ? vehiculo.monto : vehiculo.precio_base;
         const precioFormateado = Number(montoActual).toLocaleString();
         const precioBaseLote = Number(vehiculo.precio_base).toLocaleString();
 
-        // 4. Verificar quién va ganando (AHORA USANDO ganador_id)
         const user = obtenerUsuarioActual();
         let badgeStyle = 'background: #e2e3e5; color: #383d41;';
         let badgeText = 'Esperando ofertas... ¡Sé el primero!';
 
         if (vehiculo.ganador_id) {
-            if (user && vehiculo.ganador_id == user.id) {
+            if (user && Number(vehiculo.ganador_id) === Number(user.id)) {
                 badgeStyle = 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
                 badgeText = '¡Vas ganando esta subasta!';
             } else {
@@ -124,7 +129,6 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 
         if (window.socket) window.socket.emit('unirse_vehiculo', vehiculo.id);
         
-        // El llamado al temporizador ahora coincide con el nombre de tu función abajo
         if (typeof iniciarTemporizador === 'function' && vehiculo.fecha_cierre) {
             iniciarTemporizador(vehiculo.fecha_cierre.replace(' ', 'T'));
         }
@@ -136,9 +140,8 @@ async function renderizarVistaSubasta(container, vehiculoId) {
 }
 
 // =========================================================================
-// 3. RESTO DE TUS FUNCIONES GLOBALES
+// 3. REGISTRO Y FUNCIONES GLOBALES
 // =========================================================================
-
 document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'form-registro') {
         e.preventDefault(); 
@@ -157,7 +160,7 @@ document.addEventListener('submit', async (e) => {
         const data = { nombre: nombreValor, apellido: apellidoValor, correo: emailValor, telefono: telefonoValor, password: passValor };
         
         try {
-            const res = await fetch(`https://subastas-qja9.onrender.com/api/auth/registro`, {
+            const res = await fetch(`${API_URL}/auth/registro`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -181,10 +184,12 @@ function cambiarFotoPrincipal(url) {
     document.getElementById('imagen-principal-carrusel').src = url;
 }
 
-// CONEXIÓN A SOCKET.IO
+// =========================================================================
+// 4. CONEXIÓN A SOCKET.IO (Unificada con URL_BACKEND)
+// =========================================================================
 var socket; 
 if (typeof io !== 'undefined') {
-    const socket = io('https://subastas-7d8i.onrender.com');
+    socket = io(URL_BACKEND);
     window.socket = socket; 
 
     socket.on('actualizacion_puja', (data) => {
@@ -195,12 +200,10 @@ if (typeof io !== 'undefined') {
         
         const user = obtenerUsuarioActual();
         if (badge) {
-            if (user && data.usuarioGanadorId == user.id) {
+            if (user && Number(data.usuarioGanadorId) === Number(user.id)) {
                 badge.style.background = '#d4edda';
                 badge.style.color = '#155724';
                 badge.innerText = "¡Vas ganando esta subasta!";
-                
-                // AQUÍ ES DONDE VA EL ÉXITO REAL:
                 if (typeof mostrarAlerta === 'function') mostrarAlerta("¡Oferta guardada exitosamente en la base de datos!", 'exito');
             } else {
                 badge.style.background = '#f8d7da';
@@ -211,7 +214,8 @@ if (typeof io !== 'undefined') {
     });
 
     socket.on('error_puja', (mensaje) => {
-        mostrarAlerta(mensaje, 'error');
+        if (typeof mostrarAlerta === 'function') mostrarAlerta(mensaje, 'error');
+        else alert(mensaje);
     });
 }
 
@@ -236,7 +240,6 @@ function realizarPuja(vehiculoId, precioBase) {
         return;
     }
 
-    // Ya NO mostramos éxito aquí. Solo emitimos al servidor en silencio.
     if (window.socket) {
         window.socket.emit('nueva_puja', {
             vehiculoId: vehiculoId,
