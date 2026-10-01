@@ -124,7 +124,7 @@ async function renderizarMisPublicaciones(container) {
             let fotoPortada = fotosArray[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
             
             if (fotoPortada.startsWith('/uploads/')) {
-                fotoPortada = `https://subastas-qja9.onrender.com/api${fotoPortada}`;
+                fotoPortada = `https://subastas-7d8i.onrender.com/api${fotoPortada}`;
             }
 
             const precioBase = v.precio_base ? Number(v.precio_base).toLocaleString() : '0.00';
@@ -347,7 +347,7 @@ function abrirFormularioEdicion(vehiculoEncoded) {
     });
 }
 function obtenerUrlFoto(fotosStr) {
-    const URL_BACKEND = 'https://subastas-qja9.onrender.com';
+    const URL_BACKEND = 'https://subastas-7d8i.onrender.com';
     
     if (!fotosStr) {
         return 'https://via.placeholder.com/600x400?text=Sin+Imagen';
